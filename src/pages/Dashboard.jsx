@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { isSuperAdmin } from '../utils/roles';
 import {
   Users,
   FileText,
@@ -41,8 +42,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    if (user && (user.role === 'admin' || user.role === 'superadmin')) {
-      navigate('/admin/dashboard', { replace: true });
+    if (user && isSuperAdmin(user.role)) {
+      navigate(user.adminOtpVerified ? '/admin/dashboard' : '/admin/verify-otp', { replace: true });
     }
   }, [user, navigate]);
 
@@ -51,7 +52,7 @@ export default function Dashboard() {
     return null;
   }
 
-  if (user.role === 'admin' || user.role === 'superadmin') {
+  if (isSuperAdmin(user.role)) {
     return null;
   }
 

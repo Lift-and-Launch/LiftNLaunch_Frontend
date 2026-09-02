@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { hasPendingAdminOtp } from '../utils/roles';
 
 export default function SignIn() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, login, status } = useAuth();
-  
+  const { user, login, loading: authLoading } = useAuth();
+
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,14 +15,21 @@ export default function SignIn() {
   const from = location.state?.from?.pathname || '/dashboard';
 
   useEffect(() => {
-    if (user) {
-      if (user.role === 'superadmin' || user.role === 'admin') {
-        navigate('/admin/dashboard', { replace: true });
-      } else {
-        navigate(from, { replace: true });
-      }
+    if (authLoading) return;
+    if (!user) return;
+
+    if (hasPendingAdminOtp(user)) {
+      navigate('/admin/verify-otp', { replace: true });
+      return;
     }
-  }, [user, navigate, from]);
+
+    if (user.role === 'superadmin' && user.adminOtpVerified) {
+      navigate('/admin/dashboard', { replace: true });
+      return;
+    }
+
+    navigate(from, { replace: true });
+  }, [user, authLoading, navigate, from]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -33,12 +41,18 @@ export default function SignIn() {
     setLoading(true);
 
     const result = await login(form.email, form.password);
-    
+
     if (!result.success) {
       setError(result.message || 'Invalid email or password');
       setLoading(false);
+      return;
     }
-    // navigation happens in useEffect
+
+    if (result.otpRequired) {
+      navigate('/admin/verify-otp', { replace: true });
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -93,15 +107,14 @@ export default function SignIn() {
               <a href="#" className="font-bold text-yellow-600 hover:text-yellow-700">Forgot password?</a>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-black py-4 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
 
           <div className="mt-8 text-center">
             <p className="text-gray-500 font-medium">
