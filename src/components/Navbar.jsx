@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { useAuth } from "../context/AuthContext";
+import { isSuperAdmin } from "../utils/roles";
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, needsAdminOtp } = useAuth();
+  const showAuthUser = user && !needsAdminOtp;
   const navigate = useNavigate();
 
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -94,7 +96,7 @@ export default function Navbar() {
 
           {/* Auth / Avatar */}
           <div className="ml-4 relative">
-            {!user ? (
+            {!showAuthUser ? (
               <div className="space-x-3">
                 <Link to="/signup">
                   <button className="bg-yellow-400 hover:bg-yellow-500 px-5 py-1 rounded-full text-sm border border-yellow-400 text-black" type="button">
@@ -136,7 +138,13 @@ export default function Navbar() {
                   role="menu"
                 >
                   <Link
-                    to={user?.role === 'superadmin' ? '/admin/dashboard' : '/dashboard'}
+                    to={
+                      isSuperAdmin(user?.role) && !user?.adminOtpVerified
+                        ? '/admin/verify-otp'
+                        : isSuperAdmin(user?.role)
+                          ? '/admin/dashboard'
+                          : '/dashboard'
+                    }
                     onClick={() => setActiveDropdown(null)}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
@@ -203,7 +211,7 @@ export default function Navbar() {
 
           <Link to="/faq" className="block" role="menuitem">Help Center</Link>
 
-          {!user ? (
+          {!showAuthUser ? (
             <div className="pt-2 space-y-2">
               <Link to="/signup">
                 <button className="block w-full bg-yellow-400 hover:bg-yellow-500 px-5 py-2 rounded-full text-sm" type="button">
