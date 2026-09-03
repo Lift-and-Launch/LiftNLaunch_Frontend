@@ -36,19 +36,19 @@ const WebsiteBuilder: React.FC = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate("/signin");
+      navigate("/signin", { replace: true });
       return;
     }
     if (!user.isSubscribed) {
-      navigate("/pricing");
+      navigate("/pricing", { replace: true, state: { from: location } });
       return;
     }
     if (user.isSubscribed && user.adminApprovalStatus !== "approved") {
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
       return;
     }
     loadFromLocalStorage(campaignId);
-  }, [user, navigate, loadFromLocalStorage, campaignId]);
+  }, [user, navigate, loadFromLocalStorage, campaignId, location]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

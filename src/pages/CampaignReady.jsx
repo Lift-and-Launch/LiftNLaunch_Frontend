@@ -7,6 +7,7 @@ export default function CampaignReady() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const campaignId = location.state?.campaignId;
 
   const handleGenerate = () => {
     if (user && !user.isSubscribed) {
@@ -14,6 +15,18 @@ export default function CampaignReady() {
     } else {
       navigate('/dashboard/campaign/builder', { state: location.state });
     }
+  };
+
+  const handleOpenAi = () => {
+    if (!campaignId) {
+      navigate('/dashboard');
+      return;
+    }
+    if (user && !user.isSubscribed) {
+      navigate('/pricing');
+      return;
+    }
+    navigate(`/dashboard/campaign/${campaignId}/ai`);
   };
 
   return (
@@ -44,7 +57,7 @@ export default function CampaignReady() {
                 Your Campaign Page Is Ready
               </h1>
               <p className="text-gray-500 text-lg font-medium">
-                We've created a launch-optimized landing page for your campaign.
+                Open the builder to edit your page, or use AI to draft landing sections and improve campaign copy first.
               </p>
             </div>
 
@@ -63,12 +76,23 @@ export default function CampaignReady() {
               </div>
             </div>
 
-            <button 
-              onClick={handleGenerate}
-              className="px-8 py-4 bg-yellow-500 text-white rounded-full font-bold shadow-md hover:bg-yellow-600 transition-all active:scale-95"
-            >
-              Generate Landing Page
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleGenerate}
+                className="px-8 py-4 bg-yellow-500 text-white rounded-full font-bold shadow-md hover:bg-yellow-600 transition-all active:scale-95"
+              >
+                Open Landing Page Builder
+              </button>
+              {campaignId && (
+                <button
+                  type="button"
+                  onClick={handleOpenAi}
+                  className="px-8 py-4 bg-white border-2 border-gray-900 text-gray-900 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95"
+                >
+                  Draft with AI Assistant
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Right side illustration */}

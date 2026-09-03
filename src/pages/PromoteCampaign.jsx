@@ -119,6 +119,13 @@ export default function PromoteCampaign() {
             >
               <ArrowLeft size={16} /> Back to Workspace
             </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/dashboard/campaign/${campaignId}/ai`)}
+              className="text-sm font-black text-yellow-600 hover:text-yellow-700 uppercase tracking-widest"
+            >
+              AI Assistant →
+            </button>
           </div>
 
           {/* Campaign Info Header */}
@@ -192,11 +199,20 @@ export default function PromoteCampaign() {
             <ArrowLeft size={16} /> Back to Workspace
           </button>
           
-          <div className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full">
-            <Globe className="text-indigo-600" size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
-              {activePlatform === "google" ? "Google Ads Engine" : "Meta Ads Engine"}
-            </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(`/dashboard/campaign/${campaignId}/ai`)}
+              className="text-[10px] font-black text-yellow-600 hover:text-yellow-700 uppercase tracking-widest"
+            >
+              AI Assistant →
+            </button>
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full">
+              <Globe className="text-indigo-600" size={14} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
+                {activePlatform === "google" ? "Google Ads Engine" : "Meta Ads Engine"}
+              </span>
+            </div>
           </div>
         </div>
 

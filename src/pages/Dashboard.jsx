@@ -24,7 +24,7 @@ import {
   Rocket,
   ArrowRight,
   Clock,
-  ShieldAlert
+  ShieldAlert,
 } from 'lucide-react';
 import CreateCampaignForm from '../components/CreateCampaignForm';
 import api from '../api/axios';
@@ -559,6 +559,20 @@ const UserDashboardView = ({ logout, user }) => {
                              </div>
 
                              <div className="flex items-center gap-2 justify-end">
+                               <button
+                                 id={`aiAssistant-${campaign._id}`}
+                                 onClick={() => {
+                                   if (user.isSubscribed && user.adminApprovalStatus !== 'approved') {
+                                     alert("Your account is currently under review by our admin team. AI tools unlock after approval.");
+                                     return;
+                                   }
+                                   navigate(`/dashboard/campaign/${campaign._id}/ai`);
+                                 }}
+                                 className="px-4 py-3 bg-yellow-50 text-yellow-700 rounded-xl hover:bg-yellow-100 transition-all active:scale-95 flex items-center gap-2 font-black text-[10px] uppercase tracking-wider cursor-pointer"
+                                 title="Campaign AI Assistant"
+                               >
+                                 <Sparkles size={16} /> AI
+                               </button>
                                {campaign.status === "active" && (
                                  <button
                                    id={`promoteCampaign-${campaign._id}`}

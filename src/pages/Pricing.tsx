@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import api from '../api/axios';
 
@@ -106,6 +107,15 @@ const tiers: Tier[] = [
 
 export default function ConsultationTiers() {
   const [hovered, setHovered] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate("/dashboard");
+  };
 
   const handleGetStarted = async (planId: string) => {
     try {
@@ -127,6 +137,15 @@ export default function ConsultationTiers() {
   return (
     <div className="w-full min-h-screen bg-[#f0ebe0]">
       <section className="w-full flex flex-col items-center px-4 py-20 pb-28">
+        <div className="w-full max-w-6xl px-2 mb-6">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="text-sm font-semibold text-gray-700 hover:text-gray-900"
+          >
+            ← Back
+          </button>
+        </div>
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
