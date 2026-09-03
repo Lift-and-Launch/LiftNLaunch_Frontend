@@ -1,6 +1,6 @@
 // src/routes/AppRoutes.tsx (or src/AppRoutes.tsx - whichever path you're using)
 import React, { Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import { useAuth } from "./context/AuthContext";
 import ActivateFunnelBuilder from "./pages/ActivateFunnelBuilder";
@@ -44,6 +44,7 @@ const CampaignPublishedSuccess = React.lazy(() => import("./pages/CampaignPublis
 const LiveWebsite = React.lazy(() => import("./pages/LiveWebsite"));
 const StripeCallback = React.lazy(() => import("./pages/StripeCallback"));
 const PromoteCampaign = React.lazy(() => import("./pages/PromoteCampaign"));
+const CampaignAiAssistant = React.lazy(() => import("./pages/CampaignAiAssistant"));
 const Profile = React.lazy(() => import("./pages/Profile"));
 
 // Website Builder Page
@@ -52,25 +53,31 @@ const WebsiteBuilder = React.lazy(() => import("./pages/WebsiteBuilder"));
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (!user) return <Navigate to="/signin" />;
+  if (!user) return <Navigate to="/signin" replace />;
   return children;
 };
 
 const PriceGatedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
-  if (!user) return <Navigate to="/signin" />;
-  if (!user.isSubscribed) return <Navigate to="/pricing" />;
-  if (user.adminApprovalStatus !== 'approved') return <Navigate to="/dashboard" />;
+  if (!user) return <Navigate to="/signin" replace />;
+  // replace so Back skips this gated page and returns to the screen the user came from
+  if (!user.isSubscribed) {
+    return <Navigate to="/pricing" replace state={{ from: location }} />;
+  }
+  if (user.adminApprovalStatus !== 'approved') {
+    return <Navigate to="/dashboard" replace />;
+  }
   return children;
 };
 
 const ApprovedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (!user) return <Navigate to="/signin" />;
+  if (!user) return <Navigate to="/signin" replace />;
   if (user.isSubscribed && user.adminApprovalStatus !== 'approved') {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/dashboard" replace />;
   }
   return children;
 };
@@ -334,6 +341,16 @@ const AppRoutes = () => {
             <ApprovedRoute>
               <MainLayout>
                 <PromoteCampaign />
+              </MainLayout>
+            </ApprovedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/campaign/:id/ai"
+          element={
+            <ApprovedRoute>
+              <MainLayout>
+                <CampaignAiAssistant />
               </MainLayout>
             </ApprovedRoute>
           }
