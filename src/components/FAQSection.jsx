@@ -19,7 +19,7 @@ export default function FAQSection() {
       </div>
 
       <p className="md:w-[590px] w-full md:mt-8 mt-6 text-gray-600 mx-auto text-center">
-        Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text
+        Find answers to the most common questions about launching and funding your next venture with Lift & Launch.
       </p>
 
       <div className="md:mt-12 mt-8 max-w-5xl mx-auto">

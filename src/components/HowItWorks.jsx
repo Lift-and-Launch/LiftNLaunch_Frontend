@@ -34,26 +34,26 @@ export default function HowItWorks() {
         {
             step: "1",
             image: "/index/svg 1.png",
-            title: "SET UP A FUNNEL",
-            description: "Using proprietary strategies proven to convert 30-50x more and eliminate wasteful ad spend.",
+            title: "Design a Business Built to Last",
+            description: "We help you shape a business model that holds up long after the campaign ends, so you're not just launching — you're building something that lasts.",
         },
         {
             step: "2",
             image: "/index/svg 2.png",
-            title: "TEST AND VALIDATE",
-            description: "Your product & product positioning for real customer demand.",
+            title: "Build a Funnel That Actually Converts",
+            description: "Using tested strategies, we build you a funnel that turns curious visitors into committed backers, without burning your budget on ads that don't convert.",
         },
         {
             step: "3",
             image: "/index/svg 3.png",
-            title: "BUILD AN AUDIENCE",
-            description: "Of real buyers and a campaign that speaks directly to them.",
+            title: "Validate Demand With Real Customers",
+            description: "Before you go live, we confirm real people want what you're selling — so your launch is backed by evidence, not hope.",
         },
         {
             step: "4",
             image: "/index/svg 4.png",
-            title: "LAUNCH",
-            description: `And get funded in less than 24 hours. *Our average time of funding once launched is 15 minutes.`,
+            title: "Launch and Get Funded — Fast",
+            description: `With the right groundwork in place, most of our campaigns hit their funding goal within 7 Days. Because real success isn't just about money, it's about the brand you build.`,
         },
     ];
 
@@ -61,11 +61,11 @@ export default function HowItWorks() {
         <section className="bg-white py-20 px-4 md:px-8 overflow-hidden">
             <div className="max-w-7xl mx-auto">
                 <h2 className="highlight-underline text-4xl md:text-5xl font-bold text-gray-900 mb-6 relative z-10">
-                    WHAT IF WE HELD HANDS?
+                    Let's Build More than a Campaign.
                 </h2>
 
                 <p className="text-gray-600 max-w-2xl mb-12">
-                    The point of using lorem ipsum is that it has a search for lorem ipsum will uncover many web sites still in their infancy. Various versions have evolved over the years — sometimes by accident, sometimes on purpose.
+                    Let's map what's next: Launch, Fund, or Scale. Launching a campaign can feel like a lot to carry alone. You won't have to. We walk beside you from first idea to long-term growth — here's how:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
