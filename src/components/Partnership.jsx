@@ -15,7 +15,7 @@ export default function Partnership() {
 
                 {/* Paragraph 1 */}
                 <p className="md:text-base text-sm text-gray-900/60 w-full mx-auto text-center md:w-4/5 md:mt-6 mt-4">
-                    Crowdfunding isn’t just about launching—it’s about launching the right way. Our battle-tested system is designed to help creators like you raise funds, grow a brand, and build a thriving business.
+                    Crowdfunding isn’t just hitting “publish” on a campaign page—it’s about launching the right way. Our tested funnel system is built to help business owners and creators raise the funds they need to scale their businesses, launch new products, or turn their ideas into reality.
                 </p>
 
                 {/* Image Grid */}
@@ -29,12 +29,12 @@ export default function Partnership() {
 
                 {/* Paragraph 2 */}
                 <p className="md:text-base text-sm text-gray-900/60 w-full mx-auto text-center md:w-4/5 md:mt-8 mt-6">
-                    We use data-driven strategies, expert marketing, and high-converting funnels to give you the best chance of success—right from day one.
+                    Because the launch doesn’t end in a day—it’s the beginning of a strategy designed to build momentum, grow your brand, and support your business long after the campaign goes live. We combine data, smart marketing, and high-converting funnels to stack the odds in your favor from day one.
                 </p>
 
                 {/* Paragraph 3 */}
                 <p className="md:text-base text-sm text-gray-900/60 w-full mx-auto text-center md:w-4/5 md:mt-6 mt-4 font-semibold">
-                    The result? More funding. More backers. More momentum. Let’s launch your idea the smart way.
+                    The payoff? More funding. More backers. More momentum. Let’s Turn What You’re Building Into a Smart Launch.
                 </p>
 
                 {/* CTA Button */}

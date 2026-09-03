@@ -96,21 +96,25 @@ export default function Hero() {
           className="max-w-xl w-full text-center md:text-left md:pt-10"
         >
           <p className="text-sm font-semibold text-yellow-600 uppercase mb-2">
-            #1 crowdfunding platform
+            Works across Kickstarter, Indiegogo, Lift & Launch Seed Ventures, and more
           </p>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-            Successful Fundraisers Start Here
+            The Fastest Way to Fund, Launch or Scale Your Next Business Venture.
           </h1>
           <p className="mt-4 text-gray-700 text-lg">
-            Build a diverse investment portfolio and back the businesses you
-            care about from just £10.
+            Turn Your Business Idea, Product, or Big Launch Into a Venture That Makes Waves. Our proven system takes you from first spark to fully funded — and beyond.
           </p>
+          <ul className="mt-4 text-gray-700 text-md list-disc list-inside space-y-1">
+            <li>From idea to income — our crowdfunding system turns dreamers into funded founders.</li>
+            <li>Launch smarter, scale faster, and build a brand people actually want to back.</li>
+            <li>Raise the funds, find the backers, and build the business.</li>
+          </ul>
           <div className="mt-6">
             <Link
-              to="/campaigns"
+              to="/contact"
               className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 px-6 rounded-full text-sm"
             >
-              Discover opportunities
+              Chat With a Crowdfunding Expert
             </Link>
           </div>
 
