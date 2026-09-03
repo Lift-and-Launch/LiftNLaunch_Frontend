@@ -7,18 +7,19 @@ gsap.registerPlugin(ScrollTrigger);
 const stories = [
   {
     image: "/index/image (5).png",
-    description: `Turn your ideas into reality with expert crowdfunding support.
-from campaign strategy to marketing,
-we guide you every step of the way to achieve your funding goals.
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. proin at ligula ut nisi
-volutpat vehicula, sed facilisis,`,
+    description: `Step 1: Education — Learn What Actually Works
+Goal: Help you understand how crowdfunding works and build realistic expectations before you commit. We start by exploring whether crowdfunding is genuinely the right move for you.
+
+Step 2: Strategy — Assessment & Roadmap
+Once we understand your readiness, willingness, and the value you're after, we build your roadmap together. Choosing your strategy, type, and setting your goals.`,
   },
   {
     image: "/index/image (6).png",
-    description: `Turn your ideas into reality with expert crowdfunding support.
-from campaign strategy to marketing.
-we guide you every step of the way to achieve your funding goals.
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. proin at ligula ut nisi volutpat vehicula, sed facilisis,`,
+    description: `Step 3: Training — Marketing & Network Preparation
+This phase equips you with the strategy, marketing skills, and network-activation tools you'll need for a strong campaign. Strengthen your business fundamentals, sharpen your story, and build a community.
+
+Step 4: Support — Campaign Page & Beyond
+Your campaign page needs to do more than look good—it needs to tell your story, build trust, and turn interest into action. We bring strategy, storytelling, and precision together to create a page built to convert.`,
   },
 ];
 
@@ -57,8 +58,8 @@ export default function SuccessStories() {
     <section className="bg-white py-24 px-6 overflow-hidden">
       <div className="max-w-6xl mx-auto">
         <h2 className="relative text-3xl md:text-5xl font-black text-center text-gray-900 mb-20 md:w-4/5 mx-auto leading-tight z-10">
-          WE'VE HELPED CREATORS RAISE <br className="hidden md:block" />
-          MILLIONS FOR THEIR DREAM JOBS
+          OUR METHODOLOGY <br className="hidden md:block" />
+          <span className="text-xl md:text-2xl mt-4 block text-gray-600 font-medium normal-case">The Lift & Launch Process: A Step-by-Step System Built for Real Results</span>
           <span className="absolute -bottom-2 md:-bottom-4 left-1/2 -translate-x-1/2 w-48 md:w-80 h-3 bg-yellow-400/60 -rotate-1 -z-10 rounded-full"></span>
         </h2>
 
