@@ -3,6 +3,7 @@ import React, { Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import { useAuth } from "./context/AuthContext";
+import { isSuperAdmin } from "./utils/roles";
 import ActivateFunnelBuilder from "./pages/ActivateFunnelBuilder";
 
 // Lazy load pages for better performance
@@ -86,7 +87,10 @@ const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/signin" />;
-  if (user.role !== 'admin' && user.role !== 'superadmin') {
+  if (isSuperAdmin(user.role) && !user.adminOtpVerified) {
+    return <Navigate to="/admin/verify-otp" replace />;
+  }
+  if (!isSuperAdmin(user.role)) {
     return <Navigate to="/dashboard" />;
   }
   return children;
@@ -95,6 +99,7 @@ const AdminRoute = ({ children }) => {
 const AdminDashboardView = React.lazy(
   () => import("./components/AdminDashboardView"),
 );
+const AdminOtpVerify = React.lazy(() => import("./pages/AdminOtpVerify"));
 
 const AppRoutes = () => {
   return (
@@ -385,6 +390,9 @@ const AppRoutes = () => {
             </PriceGatedRoute>
           }
         />
+
+        {/* Admin OTP (pending token — must sit above /admin/*) */}
+        <Route path="/admin/verify-otp" element={<AdminOtpVerify />} />
 
         {/* Admin Routes */}
         <Route

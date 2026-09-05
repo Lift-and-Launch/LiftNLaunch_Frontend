@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
-import Clients from "../components/Clients";
 import FAQSection from "../components/FAQSection";
 import Seo from "../seo/Seo";
 import { pageSeo } from "../seo/seoConfig";
@@ -209,8 +208,9 @@ export default function Services() {
         </div>
       </section>
 
-      <Clients />
+      {/* FAQ SECTION */}
       <FAQSection />
+
     </div>
   );
 }
