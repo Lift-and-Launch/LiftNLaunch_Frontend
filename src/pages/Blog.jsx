@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { Search, Clock, Calendar } from "lucide-react";
 import api from "../api/axios";
+import Seo from "../seo/Seo";
+import { pageSeo } from "../seo/seoConfig";
 
 export default function Blog() {
   const [blogs, setBlogs] = useState([]);
@@ -60,11 +62,13 @@ export default function Blog() {
 
   return (
     <div className="bg-white text-black">
+      <Seo {...pageSeo.blog} />
       <section className="max-w-screen-xl mx-auto px-4 py-16">
         {/* Featured Section */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">
-            OUR FEATURED <span className="underline decoration-yellow-400">BLOG</span>
+            Crowdfunding Insights &amp;{" "}
+            <span className="underline decoration-yellow-400">Launch Strategy</span>
           </h1>
           <div className="flex gap-2">
             {["Popular", "Recent"].map((tab) => (

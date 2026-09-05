@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from '../api/axios';
+import Seo from "../seo/Seo";
+import { pageSeo } from "../seo/seoConfig";
 
 const bronzegold = "/pricing/bronze-gold.png";
 const silverImg = "/pricing/silver.png";
@@ -136,6 +138,11 @@ export default function ConsultationTiers() {
 
   return (
     <div className="w-full min-h-screen bg-[#f0ebe0]">
+      <Seo
+        title={pageSeo.pricing.title}
+        description={pageSeo.pricing.description}
+        path={pageSeo.pricing.path}
+      />
       <section className="w-full flex flex-col items-center px-4 py-20 pb-28">
         <div className="w-full max-w-6xl px-2 mb-6">
           <button

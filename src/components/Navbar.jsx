@@ -39,7 +39,7 @@ export default function Navbar() {
         <Link to="/" className="flex items-center">
           <img
             src="/index/logo.webp"
-            alt="Lift and Lunch Logo"
+            alt="Lift & Launch"
             className="w-40 sm:w-48 md:w-56 lg:w-60 h-auto"
           />
         </Link>
@@ -90,7 +90,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          <Link to="/services" className="hover:text-yellow-500">Our Service</Link>
+          <Link to="/services" className="hover:text-yellow-500">LaunchVault</Link>
           <Link to="/contact" className="hover:text-yellow-500">Contact Us</Link>
 
           {/* Auth / Avatar */}
@@ -189,27 +189,12 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden px-4 pb-4 space-y-3 bg-white shadow" role="menu">
-          <Link to="/services" className="block" role="menuitem">Tech</Link>
-          <Link to="/faq" className="block" role="menuitem">FAQs</Link>
-
-          <div>
-            <p className="font-semibold text-gray-700">Explore</p>
-            <div className="ml-3 space-y-1">
-              <Link to="/campaigns" className="block" role="menuitem">All Campaigns</Link>
-              <Link to="#" className="block" role="menuitem">Categories</Link>
-              <Link to="#" className="block" role="menuitem">Success Stories</Link>
-            </div>
-          </div>
-
-          <div>
-            <p className="font-semibold text-gray-700">Fundraise</p>
-            <div className="ml-3 space-y-1">
-              <Link to="#" className="block" role="menuitem">Start Campaign</Link>
-              <Link to="/process" className="block" role="menuitem">How It Works</Link>
-            </div>
-          </div>
-
-          <Link to="/faq" className="block" role="menuitem">Help Center</Link>
+          <Link to="/process" className="block" role="menuitem">Process</Link>
+          <Link to="/services" className="block" role="menuitem">LaunchVault</Link>
+          <Link to="/campaigns" className="block" role="menuitem">Campaigns</Link>
+          <Link to="/blog" className="block" role="menuitem">Blog</Link>
+          <Link to="/faq" className="block" role="menuitem">FAQ</Link>
+          <Link to="/contact" className="block" role="menuitem">Contact</Link>
 
           {!showAuthUser ? (
             <div className="pt-2 space-y-2">
