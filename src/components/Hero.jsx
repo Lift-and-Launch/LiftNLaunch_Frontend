@@ -64,56 +64,42 @@ export default function Hero() {
   };
 
   return (
-    <section className="w-screen border-b-2 border-amber-200">
-      <section className="max-w-7xl mx-auto md:h-[90vh] overflow-hidden px-4 md:px-8 py-10 md:py-16 flex flex-col md:flex-row justify-between gap-12">
+    <section className="w-full border-b-2 border-amber-200 overflow-x-hidden">
+      <section className="max-w-7xl mx-auto px-4 md:px-8 py-10 md:py-16 flex flex-col md:flex-row md:items-center justify-between gap-10 md:gap-12 md:min-h-[85vh]">
         <div
           ref={leftTextRef}
-          className="max-w-xl w-full text-center md:text-left md:pt-10"
+          className="max-w-xl w-full text-center md:text-left shrink-0"
         >
           <p className="text-sm font-semibold text-yellow-600 uppercase mb-2">
-          Works across Kickstarter, Indiegogo, Lift &amp; Launch Seed Ventures, and more
+            Lift &amp; Launch
           </p>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
             The Fastest Way to Fund, Launch or Scale Your Next Business Venture.
           </h1>
-          <p className="mt-4 text-gray-700 text-lg">
+          <p className="mt-4 text-gray-700 text-base md:text-lg leading-relaxed">
             Turn your business idea, product, or big launch into a venture
-            everyone&apos;s talking about. Our proven system takes you from first
-            spark to fully funded — and beyond.
+            everyone&apos;s talking about. From idea to income — our crowdfunding
+            system turns dreamers into funded founders.
           </p>
-          <p className="mt-3 text-gray-600 text-sm">
-            Works across Kickstarter, Indiegogo, Lift &amp; Launch Seed Ventures,
-            and other major crowdfunding platforms.
-            Turn Your Business Idea, Product, or Big Launch Into a Venture That Makes Waves. Our proven system takes you from first spark to fully funded — and beyond.
+          <p className="mt-3 text-gray-600 text-sm leading-relaxed">
+            Launch smarter, scale faster, and raise with a system that&apos;s
+            already worked hundreds of times — across Kickstarter, Indiegogo,
+            Lift &amp; Launch Seed Ventures, and other major platforms.
           </p>
-          <ul className="mt-4 text-gray-700 text-md list-disc list-inside space-y-1">
-            <li>From idea to income — our crowdfunding system turns dreamers into funded founders.</li>
-            <li>Launch smarter, scale faster, and build a brand people actually want to back.</li>
-            <li>Raise the funds, find the backers, and build the business.</li>
-          </ul>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
             <Link
               to="/contact"
-              className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 px-6 rounded-full text-sm"
+              className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 px-6 rounded-full text-sm text-center"
             >
               Chat With a Crowdfunding Expert
             </Link>
+            <Link
+              to="/process"
+              className="inline-block border border-gray-300 hover:border-gray-900 text-gray-900 font-medium py-3 px-6 rounded-full text-sm text-center"
+            >
+              See Our Process
+            </Link>
           </div>
-
-          <ul className="mt-8 space-y-2 text-left text-sm text-gray-700 max-w-md mx-auto md:mx-0">
-            <li>
-              From idea to income — our crowdfunding system turns dreamers into
-              funded founders.
-            </li>
-            <li>
-              Launch smarter, scale faster, and build a brand people actually
-              want to back.
-            </li>
-            <li>
-              Raise the funds, find the backers, and build the business — with a
-              system that&apos;s already worked hundreds of times.
-            </li>
-          </ul>
         </div>
 
         <div className="flex w-full md:w-1/2 justify-center gap-4">
@@ -124,14 +110,14 @@ export default function Hero() {
                 ref={(el) => addToImagesRefs(el)}
                 onMouseEnter={() => handleMouseEnter(idx)}
                 onMouseLeave={() => handleMouseLeave(idx)}
-                className={`cursor-pointer inline-block ${idx === 0 ? "-mt-6" : ""}`}
+                className={`cursor-pointer inline-block ${idx === 0 ? "md:-mt-6" : ""}`}
               >
                 <img
                   alt={`Lift & Launch campaign success visual ${idx + 1}`}
                   loading="lazy"
                   width={300}
                   height={400}
-                  className="rounded-lg w-[250px] md:w-[300px]"
+                  className="rounded-lg w-[200px] sm:w-[250px] md:w-[280px]"
                   src={src}
                 />
               </div>
@@ -154,7 +140,7 @@ export default function Hero() {
                     loading="lazy"
                     width={300}
                     height={400}
-                    className="rounded-lg w-[250px] md:w-[300px]"
+                    className="rounded-lg w-[200px] sm:w-[250px] md:w-[280px]"
                     src={src}
                   />
                 </div>

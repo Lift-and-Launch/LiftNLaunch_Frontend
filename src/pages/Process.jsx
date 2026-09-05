@@ -86,45 +86,37 @@ const methodology = [
 ];
 
 const Process = () => {
-  const heroRef = useRef(null);
   const stepsRef = useRef(null);
 
   useEffect(() => {
-    if (heroRef.current) {
-      gsap.from(heroRef.current, {
-        opacity: 0,
-        y: -40,
-        duration: 1,
-        ease: "power2.out",
-      });
-    }
-    if (stepsRef.current?.children) {
-      gsap.from(stepsRef.current.children, {
-        opacity: 0,
-        y: 40,
-        duration: 0.8,
-        stagger: 0.12,
-        scrollTrigger: {
-          trigger: stepsRef.current,
-          start: "top 80%",
-          toggleActions: "play none none none",
-        },
-      });
-    }
-    return () => ScrollTrigger.getAll().forEach((t) => t.kill());
+    const ctx = gsap.context(() => {
+      if (stepsRef.current?.children) {
+        gsap.from(stepsRef.current.children, {
+          opacity: 0,
+          y: 40,
+          duration: 0.8,
+          stagger: 0.12,
+          clearProps: "opacity,transform",
+          scrollTrigger: {
+            trigger: stepsRef.current,
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+        });
+      }
+    });
+
+    return () => ctx.revert();
   }, []);
 
   const seo = pageSeo.process;
 
   return (
-    <div className="bg-white text-black">
+    <div className="bg-white text-gray-900">
       <Seo {...seo} />
 
-      <section
-        ref={heroRef}
-        className="text-center py-16 px-4 bg-gradient-to-r from-white to-gray-50"
-      >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">
+      <section className="text-center py-16 px-4 bg-gradient-to-r from-white to-gray-50 text-gray-900">
+        <h1 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight text-gray-900">
           Success Starts Before You Launch
         </h1>
         <p className="mb-4 text-gray-700 max-w-3xl mx-auto text-lg">
@@ -140,7 +132,7 @@ const Process = () => {
         </p>
         <Link
           to="/contact"
-          className="inline-block bg-yellow-400 px-10 py-4 rounded-full font-bold hover:bg-yellow-500 transition-all shadow-lg"
+          className="inline-block bg-yellow-400 text-gray-900 px-10 py-4 rounded-full font-bold hover:bg-yellow-500 transition-all shadow-lg"
         >
           Chat With a Crowdfunding Expert
         </Link>
