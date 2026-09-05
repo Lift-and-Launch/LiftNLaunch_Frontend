@@ -1,131 +1,109 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Clients from "../components/Clients";
+import Seo from "../seo/Seo";
+import { pageSeo } from "../seo/seoConfig";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const tabContent = {
-  "Be Your Evangelists": {
-    text: "In Year 1, We Put Up Merchandise Sales Of Almost $750,000. Our Community Owners Want All Of Our Merch So That They Can Go Out And Say, This Is Something I'm A Part Of.",
-    author: "Wes Burdine",
-    subtitle: "Co-Founder, Minnesota Women's Soccer\nRaised $1,000,000 From 3,081 Investors",
-    img: "/index/Ellipse 7.png"
+const stages = [
+  {
+    title: "Just Have an Idea?",
+    text: "You don't need a finished product to run a successful campaign — you need the right strategy. Whether you're working from a sketch, a rough prototype, or a polished product, our system meets you where you are and walks you toward launch day with confidence.",
   },
-  "Join Your Team": {
-    text: "Empower talented individuals to join your mission and bring unique skills to your venture.",
-    author: "Jane Doe",
-    subtitle: "Head of Growth, Startup Inc.",
-    img: "/index/Ellipse 8.png"
+  {
+    title: "Have a Working Prototype?",
+    text: "Great — now it's time to turn that prototype into a funded product. We specialize in positioning strong products for maximum crowdfunding impact: a high-converting campaign, a loyal backer audience, and a launch strategy built to gain real traction.",
   },
-  "Refer Your Customers": {
-    text: "Your loyal audience can refer new customers and help expand your market reach.",
-    author: "Mike Johnson",
-    subtitle: "Marketing Strategist, ReferMe",
-    img: "/index/Ellipse 9.png"
+  {
+    title: "Running a Growing Business, Ready for Investors?",
+    text: "You've already got customers, traction, and a vision for what's next. We help growing businesses navigate equity crowdfunding — positioning your company, attracting the right investors, and turning your community into stakeholders. Whether you're headed to Republic, Wefunder, StartEngine, or Lift & Launch Seed Ventures, we'll help you build a campaign that fuels your next chapter.",
   },
-  "Become Customers": {
-    text: "Let your evangelists experience your product directly as loyal customers.",
-    author: "Sara Lee",
-    subtitle: "Customer Success Head, SaaS Co",
-    img: "/index/Ellipse 7.png"
+];
+
+const sixSteps = [
+  {
+    id: 1,
+    title: "Lay a Solid Business Foundation",
+    description:
+      "Before you raise a single dollar, your business needs a foundation that can hold the weight. We help you sharpen your strategy using business model or lean-startup principles, financial projections, and the legal groundwork investors expect to see.",
   },
-  "Enhance Perception": {
-    text: "Boost your brand credibility by showing organic community participation.",
-    author: "Tom Ray",
-    subtitle: "Founder, BrandBuild",
-    img: "/index/Ellipse 8.png"
+  {
+    id: 2,
+    title: "Build a Superfan Funnel",
+    description:
+      "Think of this as your pre-launch engine. We build you a high-converting landing page that collects emails and builds a waitlist of supporters — people who are excited to back you the moment you go live.",
   },
-};
+  {
+    id: 3,
+    title: "Identify the Audience That Loves Your Brand",
+    description:
+      "There are people out there already looking to invest in what you're building. We help you find them, craft a message that resonates, and map out the ad budget it'll take to reach them.",
+  },
+  {
+    id: 4,
+    title: "Scale Quickly and Profitably",
+    description:
+      "Using the data from your pre-launch, we fine-tune your ad spend to reach only your most engaged, ready-to-buy backers — keeping costs down and returns high.",
+  },
+  {
+    id: 5,
+    title: "Launch With Confidence",
+    description:
+      "No guesswork, no cold feet. By the time launch day arrives, you'll have a tested strategy and an engaged audience ready to fund your campaign fast.",
+  },
+  {
+    id: 6,
+    title: "Maximize the Power of a Quick Funding Start",
+    description:
+      "A strong opening isn't just about the money — it boosts your ranking on crowdfunding platforms, attracts free organic traffic, and opens doors to bigger opportunities down the line.",
+  },
+];
+
+const methodology = [
+  {
+    step: "1. Education",
+    title: "Learn What Actually Works",
+    text: "Help you understand how crowdfunding works and build realistic expectations before you commit — including readiness, network mapping, and the four crowdfunding models.",
+  },
+  {
+    step: "2. Strategy",
+    title: "Assessment & Roadmap",
+    text: "Choose your path (CrowdStarter, CrowdValidator, CrowdScaler, CrowdPatron, or CrowdFinisher), crowdfunding type, goals, and get a personalized roadmap package with a strategy session.",
+  },
+  {
+    step: "3. Training",
+    title: "Marketing & Network Preparation",
+    text: "Strengthen business fundamentals, story & brand, marketing systems, community, and team — plus crowdfunding-specific training on email, rewards, and compliance.",
+  },
+  {
+    step: "4. Support",
+    title: "Campaign Page & Beyond",
+    text: "Story flow, conversion-focused structure, and copyediting so your page tells your story, builds trust, and turns interest into action.",
+  },
+];
 
 const Process = () => {
-  const [selectedTab, setSelectedTab] = useState("Be Your Evangelists");
-
   const heroRef = useRef(null);
-  const cardsRef = useRef(null);
-  const tabsRef = useRef(null);
   const stepsRef = useRef(null);
-  const videoRef = useRef(null);
-  const benefitsRef = useRef(null);
-  const faqRef = useRef(null);
 
   useEffect(() => {
-    if (!heroRef.current) return;
-
-    gsap.from(heroRef.current, {
-      opacity: 0,
-      y: -40,
-      duration: 1,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: heroRef.current,
-        start: "top 80%",
-        toggleActions: "play none none none",
-      },
-    });
-
-    if (cardsRef.current) {
-      gsap.from(cardsRef.current.children, {
+    if (heroRef.current) {
+      gsap.from(heroRef.current, {
         opacity: 0,
-        scale: 0.95,
-        duration: 1,
-        ease: "back.out(1.7)",
-        stagger: 0.2,
-        scrollTrigger: {
-          trigger: cardsRef.current,
-          start: "top 80%",
-          toggleActions: "play none none none",
-        },
-      });
-    }
-
-    if (tabsRef.current) {
-      gsap.from(tabsRef.current, {
-        opacity: 0,
-        x: -50,
+        y: -40,
         duration: 1,
         ease: "power2.out",
-        scrollTrigger: {
-          trigger: tabsRef.current,
-          start: "top 80%",
-          toggleActions: "play none none none",
-        },
       });
     }
-
-    if (benefitsRef.current) {
-      gsap.from(benefitsRef.current, {
-        opacity: 0,
-        y: 30,
-        duration: 1,
-        scrollTrigger: {
-          trigger: benefitsRef.current,
-          start: "top 80%",
-          toggleActions: "play none none none",
-        },
-      });
-    }
-
-    if (faqRef.current) {
-      gsap.from(faqRef.current, {
-        opacity: 0,
-        y: 30,
-        duration: 1,
-        scrollTrigger: {
-          trigger: faqRef.current,
-          start: "top 80%",
-          toggleActions: "play none none none",
-        },
-      });
-    }
-
     if (stepsRef.current?.children) {
       gsap.from(stepsRef.current.children, {
         opacity: 0,
-        y: 50,
-        duration: 1,
-        ease: "power3.out",
-        stagger: 0.2,
+        y: 40,
+        duration: 0.8,
+        stagger: 0.12,
         scrollTrigger: {
           trigger: stepsRef.current,
           start: "top 80%",
@@ -133,258 +111,154 @@ const Process = () => {
         },
       });
     }
-
-    if (videoRef.current?.children) {
-      gsap.from(videoRef.current.children, {
-        opacity: 0,
-        y: 50,
-        duration: 1,
-        ease: "power3.out",
-        stagger: 0.3,
-        delay: 0.5,
-        scrollTrigger: {
-          trigger: videoRef.current,
-          start: "top 80%",
-          toggleActions: "play none none none",
-        },
-      });
-    }
-
-    return () => {
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-    };
+    return () => ScrollTrigger.getAll().forEach((t) => t.kill());
   }, []);
 
-  const tabs = Object.keys(tabContent);
+  const seo = pageSeo.process;
 
   return (
     <div className="bg-white text-black">
-      {/* Hero Section */}
-      <section ref={heroRef} className="text-center py-16 bg-gradient-to-r from-white to-gray-50">
+      <Seo {...seo} />
+
+      <section
+        ref={heroRef}
+        className="text-center py-16 px-4 bg-gradient-to-r from-white to-gray-50"
+      >
         <h1 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">
-          Let’s get you <br className="md:hidden" />
-          <span className="text-blue-900">funded in minutes</span>
+          Success Starts Before You Launch
         </h1>
-        <p className="mb-10 text-gray-600 max-w-2xl mx-auto px-4">
-          Empowering communities through transparent and accessible funding solutions. Our streamlined approach bridges the gap between vision and reality.
+        <p className="mb-4 text-gray-700 max-w-3xl mx-auto text-lg">
+          Want to get funded fast? It all comes down to what happens before launch
+          day. The pre-launch phase is where the real momentum gets built — so when
+          your campaign finally goes live, you&apos;re not crossing your fingers for
+          backers. You&apos;re opening the floodgates to people already waiting to
+          support your vision.
         </p>
-        <div className="flex justify-center gap-12 mb-10">
-          <div className="text-center">
-            <p className="text-3xl font-black text-gray-900">140+</p>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Total Campaigns</p>
-          </div>
-          <div className="text-center">
-            <p className="text-3xl font-black text-gray-900">$1.2B</p>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Revenue Generated</p>
-          </div>
-        </div>
-        <button className="bg-yellow-400 px-10 py-4 rounded-full font-bold hover:bg-yellow-500 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
-          Discover opportunities
-        </button>
+        <p className="mb-10 text-gray-900 font-semibold max-w-2xl mx-auto">
+          Fund Your Campaign. From Day One. Your Launch. Your Momentum. Your Next
+          Move.
+        </p>
+        <Link
+          to="/contact"
+          className="inline-block bg-yellow-400 px-10 py-4 rounded-full font-bold hover:bg-yellow-500 transition-all shadow-lg"
+        >
+          Chat With a Crowdfunding Expert
+        </Link>
       </section>
 
-      {/* Cards Section */}
-      <section ref={cardsRef} className="w-full max-w-screen-xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 px-6 py-12">
-        {[1, 2, 3, 4].map((item) => (
-          <div
-            key={item}
-            className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100 flex items-center justify-center p-4 hover:shadow-2xl transition-shadow"
-          >
-            <img
-              src={`/process/0${item}.png`}
-              alt={`Process step ${item}`}
-              className="max-h-full max-w-full object-contain"
-            />
-          </div>
-        ))}
-      </section>
-
-      {/* Capital Raise Section */}
-      <section className="text-center py-20 px-6">
-        <h2 className="text-3xl md:text-4xl font-black mb-4 uppercase">
-          More than just a <span className="text-blue-900 underline decoration-yellow-400">capital raise</span>
+      <section className="py-20 px-6 max-w-6xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-black mb-4 text-center">
+          Your Pre-Launch Partner for Crowdfunding Success
         </h2>
-        <p className="text-gray-500 mb-16 max-w-2xl mx-auto">
-          We build lasting ecosystems where backers become lifelong advocates for your mission.
+        <p className="text-gray-600 max-w-3xl mx-auto text-center mb-12">
+          The pre-launch stage is where most creators get stuck. With the right
+          partner, it becomes your biggest advantage instead. Since 2015, we&apos;ve
+          focused on one thing: perfecting pre-launch strategy. With 30+ years of
+          combined team experience, we know what moves the needle in crowdfunding —
+          and what&apos;s a waste of your time and budget.
         </p>
 
-        <div ref={tabsRef} className="flex flex-col md:flex-row items-center justify-center gap-12 max-w-6xl mx-auto">
-          {/* Tab List */}
-          <div className="w-full md:w-1/3">
-            <ul className="space-y-3">
-              {tabs.map((tab) => (
-                <li
-                  key={tab}
-                  onClick={() => setSelectedTab(tab)}
-                  className={`cursor-pointer px-6 py-4 rounded-xl text-left font-bold transition-all ${
-                    selectedTab === tab 
-                    ? "bg-gray-900 text-white shadow-lg translate-x-3" 
-                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  {tab}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Tab Content */}
-          <div className="bg-yellow-50/50 p-10 rounded-3xl border border-yellow-100 shadow-sm flex flex-col md:flex-row gap-10 items-center w-full">
-            <div className="flex-1 text-left">
-              <p className="text-gray-800 text-xl font-medium leading-relaxed mb-8">"{tabContent[selectedTab].text}"</p>
-              <div>
-                <p className="text-gray-900 font-black text-lg">{tabContent[selectedTab].author}</p>
-                <p className="text-gray-500 text-sm whitespace-pre-line leading-snug">{tabContent[selectedTab].subtitle}</p>
-              </div>
-            </div>
-            <div className="w-32 h-32 flex-shrink-0">
-               <img
-                src={tabContent[selectedTab].img}
-                alt="testimonial visual"
-                className="w-full h-full object-cover rounded-2xl shadow-md border-2 border-white"
-              />
-            </div>
-          </div>
+        <h3 className="text-2xl font-bold text-center mb-10">
+          Wherever You&apos;re Starting From
+        </h3>
+        <div className="grid md:grid-cols-3 gap-8">
+          {stages.map((s) => (
+            <article
+              key={s.title}
+              className="bg-gray-50 p-8 rounded-3xl border border-gray-100"
+            >
+              <h4 className="font-extrabold text-xl mb-4 text-gray-900">
+                {s.title}
+              </h4>
+              <p className="text-gray-600 leading-relaxed">{s.text}</p>
+            </article>
+          ))}
         </div>
       </section>
 
-      {/* Proven Process Section */}
-      <section ref={stepsRef} className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-20 gap-10">
-          <div className="w-full md:w-1/2">
-            <h2 className="text-3xl md:text-5xl font-black text-gray-900 uppercase leading-tight relative">
-              FOLLOW A PROVEN PROCESS FOR GROWTH
-              <div className="absolute -bottom-2 left-0 w-32 h-2 bg-yellow-400 rounded-full"></div>
-            </h2>
-          </div>
-          <p className="text-gray-500 w-full md:w-1/2 text-lg leading-relaxed">
-            Raising funds isn’t just about launching a campaign—it’s about building a business that attracts backers and investors. Our step-by-step system ensures you’re not just crowdfunding, but creating a scalable company.
+      <section className="py-24 px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-16 gap-8">
+          <h2 className="text-3xl md:text-5xl font-black text-gray-900 leading-tight md:w-1/2">
+            A Proven, Six-Step Process for Crowdfunding Growth
+          </h2>
+          <p className="text-gray-500 md:w-1/2 text-lg leading-relaxed">
+            Raising funds isn&apos;t just about launching a page — it&apos;s about
+            building a business that attracts backers and investors alike. Our
+            step-by-step system makes sure you&apos;re not just crowdfunding —
+            you&apos;re building something scalable and profitable.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[
-            {
-              id: 1,
-              title: "Solid Business Foundation",
-              description: "Refine your strategy using Lean Startup Methodology and financial projections.",
-              img: "/index/svg 1.png",
-            },
-            {
-              id: 2,
-              title: "Build a Superfan Funnel",
-              description: "Create a high-converting landing page to build a waiting list of superfans.",
-              img: "/index/svg 2.png",
-            },
-            {
-              id: 3,
-              title: "Identify Your Audience",
-              description: "Find people already looking for your product and craft the perfect message.",
-              img: "/index/svg 3.png",
-            },
-            {
-              id: 4,
-              title: "Scale Profitably",
-              description: "Using data from pre-launch, optimize ads to reach only the most engaged backers.",
-              img: "/index/svg 4.png",
-            },
-            {
-              id: 5,
-              title: "Launch with Confidence",
-              description: "Hit launch with a proven strategy and an engaged audience ready to fund.",
-              img: "/index/svg 1.png",
-            },
-            {
-              id: 6,
-              title: "Maximize Quick Funding",
-              description: "Boost your ranking on platforms and attract free organic traffic through momentum.",
-              img: "/index/svg 2.png",
-            },
-          ].map((step) => (
-            <div
+        <div ref={stepsRef} className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {sixSteps.map((step) => (
+            <article
               key={step.id}
-              className="bg-gray-50 p-8 rounded-3xl hover:bg-white hover:shadow-2xl transition-all duration-300 border border-transparent hover:border-gray-100 group"
+              className="bg-gray-50 p-8 rounded-3xl hover:bg-white hover:shadow-2xl transition-all border border-transparent hover:border-gray-100"
             >
-              <div className="w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center text-black font-black text-2xl mb-8 group-hover:scale-110 transition-transform shadow-md">
+              <div className="w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center text-black font-black text-2xl mb-8 shadow-md">
                 {step.id}
               </div>
-              <h4 className="text-gray-900 font-extrabold text-xl mb-4 leading-tight">{step.title}</h4>
+              <h3 className="text-gray-900 font-extrabold text-xl mb-4">
+                {step.title}
+              </h3>
               <p className="text-gray-500 leading-relaxed">{step.description}</p>
-            </div>
+            </article>
           ))}
         </div>
       </section>
 
-      {/* Benefits */}
-      <section ref={benefitsRef} className="py-24 bg-gray-900 text-white text-center px-6">
-        <h3 className="text-3xl font-black mb-16 uppercase tracking-widest">
-          The <span className="text-yellow-400">Neighborhood</span> Edge
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto">
-          {[
-            { title: "Save Time", desc: "Automate your pre-launch and donor tracking." },
-            { title: "Fully Secure", desc: "Enterprise-grade encryption for all transactions." },
-            { title: "24/7 Support", desc: "Expert guidance whenever you need it most." },
-          ].map((item, idx) => (
-            <div key={idx} className="bg-white/5 backdrop-blur-md p-10 rounded-3xl border border-white/10 hover:bg-white/10 transition-colors">
-              <h4 className="font-bold text-2xl mb-4 text-yellow-400">{item.title}</h4>
-              <p className="text-gray-400 leading-relaxed">{item.desc}</p>
-            </div>
-          ))}
+      <section className="py-24 px-6 bg-gray-900 text-white">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-yellow-400 font-semibold uppercase tracking-widest mb-3 text-center">
+            Our Methodology
+          </p>
+          <h2 className="text-3xl md:text-4xl font-black text-center mb-4">
+            The Lift &amp; Launch Process
+          </h2>
+          <p className="text-gray-300 text-center max-w-3xl mx-auto mb-4">
+            Most crowdfunding campaigns never reach their funding goal. Fewer than
+            one in three campaigns reach full funding, while more than half struggle
+            to reach even 10% of their target.
+          </p>
+          <p className="text-gray-400 text-center max-w-3xl mx-auto mb-14">
+            Our four-step process exists to change those odds — guiding
+            entrepreneurs, small businesses, nonprofits, and community groups from a
+            rough idea to a campaign that&apos;s ready to succeed.
+          </p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {methodology.map((m) => (
+              <article
+                key={m.step}
+                className="bg-white/5 backdrop-blur-md p-8 rounded-3xl border border-white/10"
+              >
+                <p className="text-yellow-400 font-bold mb-2">{m.step}</p>
+                <h3 className="font-bold text-xl mb-3">{m.title}</h3>
+                <p className="text-gray-400 leading-relaxed text-sm">{m.text}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Testimonials */}
+      <section className="py-24 px-6 bg-gray-50 text-center">
+        <h2 className="text-3xl font-black mb-6">
+          Where Are You on Your Crowdfunding Journey?
+        </h2>
+        <p className="text-gray-600 max-w-2xl mx-auto mb-8">
+          That was a lot to take in — but you don&apos;t have to map it out alone.
+          Tell us where you are in the process, what your strengths and weaknesses
+          are, what your USP is, and what kind of backers you&apos;re looking for,
+          and we&apos;ll help you chart the best path forward.
+        </p>
+        <Link
+          to="/contact"
+          className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-10 py-4 rounded-full"
+        >
+          Book a Free Strategy Call &amp; Map Out Your Next Move
+        </Link>
+      </section>
+
       <Clients />
-
-      {/* FAQ */}
-      <section ref={faqRef} className="py-24 px-6 bg-gray-50">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-3xl font-black text-center mb-16 uppercase">
-              Frequently <span className="text-blue-900">asked questions</span>
-            </h3>
-            <div className="space-y-4">
-              {[1, 2, 3].map((item) => (
-                <details key={item} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 cursor-pointer group open:bg-yellow-50/30 transition-all">
-                  <summary className="font-bold text-lg list-none flex justify-between items-center">
-                    What are the requirements for starting a campaign?
-                    <span className="text-yellow-500 group-open:rotate-180 transition-transform">▼</span>
-                  </summary>
-                  <p className="text-gray-500 mt-6 leading-relaxed">
-                    We look for projects that have a clear community impact, a detailed budget plan, and a committed leadership team. Our experts will review your application and provide guidance on next steps within 48 hours.
-                  </p>
-                </details>
-              ))}
-            </div>
-            <div className="text-center mt-12">
-              <button className="text-gray-900 font-bold hover:underline">View all FAQs →</button>
-            </div>
-          </div>
-      </section>
-
-      {/* Video Section */}
-      <section ref={videoRef} className="py-24 px-6 bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-6xl mx-auto">
-          <div className="aspect-video w-full rounded-3xl overflow-hidden shadow-2xl">
-            <iframe
-              className="w-full h-full"
-              src="https://www.youtube.com/embed/_TVCx0m6Omg"
-              title="Success Story 1"
-              frameBorder="0"
-              allowFullScreen
-            ></iframe>
-          </div>
-          <div className="aspect-video w-full rounded-3xl overflow-hidden shadow-2xl">
-            <iframe
-              className="w-full h-full"
-              src="https://www.youtube.com/embed/5GG-VUvruzE"
-              title="Success Story 2"
-              frameBorder="0"
-              allowFullScreen
-            ></iframe>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

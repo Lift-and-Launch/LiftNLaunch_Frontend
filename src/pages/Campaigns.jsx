@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import api from "../api/axios";
+import Seo from "../seo/Seo";
+import { pageSeo } from "../seo/seoConfig";
 
 const dummyPastCampaigns = new Array(3).fill({
   id: "past-1",
@@ -29,7 +31,7 @@ const Campaigns = () => {
             title: c.campaignName,
             description: c.description || c.businessInfo?.description,
             amountRaised: 0,
-            platform: 'NEIGHBORHOOD',
+            platform: 'LIFT & LAUNCH',
             logoUrl: c.businessInfo?.logoUrl || "/campaign/image (14).png"
           }));
           setCurrentCampaigns(campaigns);
@@ -77,6 +79,7 @@ const Campaigns = () => {
 
   return (
     <div className="bg-white text-black">
+      <Seo {...pageSeo.campaigns} />
       {/* Explore Section */}
       <section className="py-20" ref={exploreRef}>
         <div className="max-w-screen-xl mx-auto px-4 grid md:grid-cols-2 items-center gap-12">

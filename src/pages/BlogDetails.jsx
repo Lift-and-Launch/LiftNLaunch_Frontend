@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Clock, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../api/axios";
+import Seo from "../seo/Seo";
 
 export default function BlogDetails() {
   const { id } = useParams();
@@ -41,8 +42,31 @@ export default function BlogDetails() {
   if (loading) return <div className="text-center py-20">Loading...</div>;
   if (!blog) return <div className="text-center py-20">Blog not found.</div>;
 
+  const plainDescription =
+    (blog.excerpt || blog.description || blog.content || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 160) || "Crowdfunding insights from Lift & Launch.";
+
   return (
     <div className="bg-white text-black">
+      <Seo
+        title={blog.title}
+        description={plainDescription}
+        path={`/blog/${id}`}
+        image={blog.imageUrl || blog.coverImage || "/index/logo.webp"}
+        type="article"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: blog.title,
+          description: plainDescription,
+          image: blog.imageUrl || blog.coverImage,
+          datePublished: blog.date || blog.createdAt,
+          author: { "@type": "Organization", name: "Lift & Launch" },
+        }}
+      />
       <section className="max-w-screen-md mx-auto px-4 py-16">
         {/* COVER IMAGE */}
         <img

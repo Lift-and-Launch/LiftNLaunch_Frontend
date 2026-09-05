@@ -22,7 +22,7 @@ export default function PublishCampaign() {
 
   const [abTestingEnabled, setAbTestingEnabled] = useState(false);
   const [formData, setFormData] = useState({
-    slug: campaignId ? `${window.location.origin}/live/${campaignId}` : 'https://liftandlaunch.com/your-campaign-name',
+    slug: campaignId ? `${window.location.origin}/live/${campaignId}` : 'https://www.liftandlaunch.co/your-campaign-name',
     metaTitle: '',
     metaDescription: '',
     allowIndexing: true,
