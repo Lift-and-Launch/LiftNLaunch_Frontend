@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import { useAuth } from "./context/AuthContext";
 import { isSuperAdmin } from "./utils/roles";
+import { PRICING_RETURN_KEY } from "./utils/pricingNavigation";
 import ActivateFunnelBuilder from "./pages/ActivateFunnelBuilder";
 
 // Lazy load pages for better performance
@@ -65,6 +66,10 @@ const PriceGatedRoute = ({ children }) => {
   if (!user) return <Navigate to="/signin" replace />;
   // replace so Back skips this gated page and returns to the screen the user came from
   if (!user.isSubscribed) {
+    const returnTo = `${location.pathname}${location.search || ""}`;
+    if (returnTo && !returnTo.includes("/pricing")) {
+      sessionStorage.setItem(PRICING_RETURN_KEY, returnTo);
+    }
     return <Navigate to="/pricing" replace state={{ from: location }} />;
   }
   if (user.adminApprovalStatus !== 'approved') {

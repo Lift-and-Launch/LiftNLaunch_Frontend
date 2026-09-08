@@ -13,6 +13,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import {
+  sanitizeBusinessText,
+  sanitizeDescription,
+  sanitizeDecimal,
+  sanitizeInteger,
+  sanitizePercent,
+  sanitizeAlphaName,
+  isValidUrl,
+  scrollToFirstError,
+} from '../utils/formInput';
 
 export default function CampaignConfiguration() {
   const { user } = useAuth();
@@ -230,8 +240,54 @@ export default function CampaignConfiguration() {
       }
     }
 
+    if (formData.videoUrl?.trim() && !isValidUrl(formData.videoUrl)) {
+      newErrors.videoUrl = "Enter a valid video URL (https://...)";
+    }
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    if (!isValid) {
+      scrollToFirstError(
+        newErrors,
+        [
+          'name',
+          'category',
+          'tagline',
+          'guidingStrategy',
+          'goal',
+          'duration',
+          'startDate',
+          'rewards',
+          'problem',
+          'howItHelps',
+          'legalName',
+          'regNumber',
+          'country',
+          'minInvestment',
+          'equity',
+          'videoUrl',
+        ],
+        {
+          name: 'basicsName',
+          category: 'basicsCategory',
+          tagline: 'basicsTagline',
+          guidingStrategy: 'basicsGuidingStrategy',
+          goal: 'basicsGoal',
+          duration: 'basicsDuration',
+          startDate: 'basicsStartDate',
+          problem: 'problemDesc',
+          howItHelps: 'howDonationsHelp',
+          country: 'countryOfInc',
+          equity: 'equityOffered',
+          'rewards.title': 'rewardTitle',
+          'rewards.amount': 'rewardAmount',
+          'rewards.description': 'rewardDescription',
+          'rewards.delivery': 'rewardDelivery',
+          'rewards.quantity': 'rewardQuantity',
+        }
+      );
+    }
+    return isValid;
   };
 
   const handleNext = async () => {
@@ -296,21 +352,33 @@ export default function CampaignConfiguration() {
   };
 
   const updateBasics = (field, value) => {
+    let next = value;
+    if (field === 'goal') next = sanitizeDecimal(value);
+    else if (field === 'name' || field === 'tagline') next = sanitizeBusinessText(value, field === 'tagline' ? 160 : 120);
     setFormData({
       ...formData,
-      basics: { ...formData.basics, [field]: value }
+      basics: { ...formData.basics, [field]: next }
     });
   };
 
   const updateReward = (index, field, value) => {
+    let next = value;
+    if (field === 'amount') next = sanitizeDecimal(value);
+    else if (field === 'quantity') next = sanitizeInteger(value);
+    else if (field === 'title') next = sanitizeBusinessText(value, 80);
+    else if (field === 'description') next = sanitizeDescription(value, 500);
     const newRewards = [...formData.rewards];
-    newRewards[index] = { ...newRewards[index], [field]: value };
+    newRewards[index] = { ...newRewards[index], [field]: next };
     setFormData({ ...formData, rewards: newRewards });
   };
 
   const updateTeam = (index, field, value) => {
+    let next = value;
+    if (field === 'name' || field === 'role') next = sanitizeAlphaName(value, 80);
+    else if (field === 'bio') next = sanitizeDescription(value, 500);
+    else if (field === 'linkedin') next = value.trim().slice(0, 200);
     const newTeam = [...formData.team];
-    newTeam[index] = { ...newTeam[index], [field]: value };
+    newTeam[index] = { ...newTeam[index], [field]: next };
     setFormData({ ...formData, team: newTeam });
   };
 
@@ -648,7 +716,7 @@ export default function CampaignConfiguration() {
                         errors.legalName ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.legalName}
-                      onChange={e => setFormData({...formData, legalName: e.target.value})}
+                      onChange={e => setFormData({...formData, legalName: sanitizeBusinessText(e.target.value)})}
                      />
                      {errors.legalName && <p className="text-red-500 text-xs mt-1 font-bold">{errors.legalName}</p>}
                    </div>
@@ -656,12 +724,14 @@ export default function CampaignConfiguration() {
                      <label htmlFor="regNumber" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Registration Number</label>
                      <input 
                       id="regNumber"
-                      type="text" 
+                      type="text"
+                      inputMode="text"
+                      maxLength={40}
                       className={`w-full px-6 py-4 rounded-xl border bg-white font-bold transition-all ${
                         errors.regNumber ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.regNumber}
-                      onChange={e => setFormData({...formData, regNumber: e.target.value})}
+                      onChange={e => setFormData({...formData, regNumber: e.target.value.replace(/[^a-zA-Z0-9\s-]/g, "").slice(0, 40)})}
                      />
                      {errors.regNumber && <p className="text-red-500 text-xs mt-1 font-bold">{errors.regNumber}</p>}
                    </div>
@@ -670,12 +740,13 @@ export default function CampaignConfiguration() {
                   <label htmlFor="countryOfInc" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Country of Incorporation</label>
                   <input 
                     id="countryOfInc"
-                    type="text" 
+                    type="text"
+                    maxLength={80}
                     className={`w-full px-6 py-4 rounded-xl border bg-white font-bold transition-all ${
                       errors.country ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                     }`}
                     value={formData.country}
-                    onChange={e => setFormData({...formData, country: e.target.value})}
+                    onChange={e => setFormData({...formData, country: sanitizeAlphaName(e.target.value)})}
                   />
                   {errors.country && <p className="text-red-500 text-xs mt-1 font-bold">{errors.country}</p>}
                 </div>
@@ -707,7 +778,7 @@ export default function CampaignConfiguration() {
                         errors.minInvestment ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.minInvestment}
-                      onChange={e => setFormData({...formData, minInvestment: e.target.value})}
+                      onChange={e => setFormData({...formData, minInvestment: sanitizeDecimal(e.target.value)})}
                      />
                      {errors.minInvestment && <p className="text-red-500 text-xs mt-1 font-bold">{errors.minInvestment}</p>}
                    </div>
@@ -720,7 +791,7 @@ export default function CampaignConfiguration() {
                         errors.equity ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.equity}
-                      onChange={e => setFormData({...formData, equity: e.target.value})}
+                      onChange={e => setFormData({...formData, equity: sanitizePercent(e.target.value)})}
                      />
                      {errors.equity && <p className="text-red-500 text-xs mt-1 font-bold">{errors.equity}</p>}
                    </div>
@@ -794,7 +865,7 @@ export default function CampaignConfiguration() {
                         errors.problem ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.problem}
-                      onChange={e => setFormData({...formData, problem: e.target.value})}
+                      onChange={e => setFormData({...formData, problem: sanitizeDescription(e.target.value, 2000)})}
                     />
                     {errors.problem && <p className="text-red-500 text-xs mt-1 font-bold">{errors.problem}</p>}
                   </div>
@@ -807,7 +878,7 @@ export default function CampaignConfiguration() {
                         errors.howItHelps ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.howItHelps}
-                      onChange={e => setFormData({...formData, howItHelps: e.target.value})}
+                      onChange={e => setFormData({...formData, howItHelps: sanitizeDescription(e.target.value, 2000)})}
                     />
                     {errors.howItHelps && <p className="text-red-500 text-xs mt-1 font-bold">{errors.howItHelps}</p>}
                   </div>
@@ -833,14 +904,18 @@ export default function CampaignConfiguration() {
                   <div className="relative">
                     <input 
                       id="videoUrl"
-                      type="text" 
-                      placeholder="Type your URL here" 
-                      className="w-full px-6 py-4 rounded-xl border border-gray-200 bg-white font-bold pl-12"
+                      type="url"
+                      inputMode="url"
+                      placeholder="https://..." 
+                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold pl-12 ${
+                        errors.videoUrl ? 'border-red-500' : 'border-gray-200'
+                      }`}
                       value={formData.videoUrl}
-                      onChange={e => setFormData({...formData, videoUrl: e.target.value})}
+                      onChange={e => setFormData({...formData, videoUrl: e.target.value.trim().slice(0, 300)})}
                     />
                     <VideoIcon size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   </div>
+                  {errors.videoUrl && <p className="text-red-500 text-xs mt-1 font-bold">{errors.videoUrl}</p>}
                 </div>
                 <div>
                   <label htmlFor="storyText" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Brief Story</label>
@@ -860,7 +935,7 @@ export default function CampaignConfiguration() {
                       rows={8} 
                       className="w-full px-6 py-4 font-bold outline-none resize-none"
                       value={formData.story}
-                      onChange={e => setFormData({...formData, story: e.target.value})}
+                      onChange={e => setFormData({...formData, story: sanitizeDescription(e.target.value, 5000)})}
                     />
                   </div>
                 </div>

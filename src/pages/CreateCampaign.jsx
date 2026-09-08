@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ChevronDown, Plus } from 'lucide-react';
 import api from '../api/axios';
+import { sanitizeBusinessText } from '../utils/formInput';
 
 export default function CreateCampaign() {
   const navigate = useNavigate();
@@ -104,9 +105,10 @@ export default function CreateCampaign() {
               <input
                 id="campaign-name"
                 type="text"
+                maxLength={120}
                 placeholder="Enter your campaign name"
                 value={campaignName}
-                onChange={e => setCampaignName(e.target.value)}
+                onChange={e => setCampaignName(sanitizeBusinessText(e.target.value))}
                 required
                 className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 transition-all text-gray-800 font-medium placeholder-gray-300 text-sm"
               />

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Sparkles,
@@ -19,6 +19,7 @@ import {
 import api from '../api/axios';
 import { campaignAiApi, parseAiError, STEP_ROUTES } from '../api/campaignAi';
 import { useAuth } from '../context/AuthContext';
+import { goToPricing } from '../utils/pricingNavigation';
 
 const TABS = [
   { id: 'suggestions', label: 'Suggestions', icon: Lightbulb },
@@ -126,6 +127,7 @@ function GeneratingOverlay({ label = 'Generating with AI…' }) {
 export default function CampaignAiAssistant() {
   const { id: campaignId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   const [tab, setTab] = useState('suggestions');
@@ -496,7 +498,7 @@ export default function CampaignAiAssistant() {
                   }}
                   onOpenBuilder={() => {
                     if (!user?.isSubscribed) {
-                      navigate('/pricing');
+                      goToPricing(navigate, location);
                       return;
                     }
                     navigate('/dashboard/campaign/builder', {
