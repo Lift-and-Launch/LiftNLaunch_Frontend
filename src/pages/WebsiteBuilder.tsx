@@ -40,6 +40,10 @@ const WebsiteBuilder: React.FC = () => {
       return;
     }
     if (!user.isSubscribed) {
+      const returnTo = `${location.pathname}${location.search || ""}`;
+      if (returnTo && !returnTo.includes("/pricing")) {
+        sessionStorage.setItem("pricingReturnTo", returnTo);
+      }
       navigate("/pricing", { replace: true, state: { from: location } });
       return;
     }

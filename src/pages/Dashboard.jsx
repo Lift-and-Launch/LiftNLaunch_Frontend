@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { isSuperAdmin } from '../utils/roles';
+import { goToPricing } from '../utils/pricingNavigation';
 import {
   Users,
   FileText,
@@ -61,6 +62,7 @@ export default function Dashboard() {
 
 const UserDashboardView = ({ logout, user }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [campaigns, setCampaigns] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [stripeClientId, setStripeClientId] = React.useState('');
@@ -263,7 +265,7 @@ const UserDashboardView = ({ logout, user }) => {
 
     if (campaign.status !== 'draft') {
       if (user && !user.isSubscribed) {
-        navigate('/pricing');
+        goToPricing(navigate, location);
       } else {
         navigate('/dashboard/campaign/builder', { state: { campaignId, campaignType: campaign.campaignType } });
       }
@@ -385,7 +387,7 @@ const UserDashboardView = ({ logout, user }) => {
                       </button>
                       {!user.isSubscribed && (
                         <button 
-                          onClick={() => navigate('/pricing')}
+                          onClick={() => goToPricing(navigate, location)}
                           className="px-10 py-5 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 cursor-pointer"
                         >
                            Upgrade Plan
@@ -870,7 +872,7 @@ const UserDashboardView = ({ logout, user }) => {
                         <h4 className="font-black text-lg text-gray-900 mb-2">Try Premium Builder</h4>
                         <p className="text-gray-400 font-bold text-xs mb-6 px-4">Unlock advanced drag & drop sections and custom SEO slugs.</p>
                         <button 
-                          onClick={() => navigate('/pricing')}
+                          onClick={() => goToPricing(navigate, location)}
                           className="w-full py-4 bg-yellow-500 text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-xl transition-all cursor-pointer"
                         >
                           Upgrade Now
