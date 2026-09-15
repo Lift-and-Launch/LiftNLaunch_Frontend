@@ -50,6 +50,29 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
 
+  // AI drafts / partial payloads may omit styles — never read properties off undefined
+  const styles = (element?.styles && typeof element.styles === "object"
+    ? element.styles
+    : {}) as WebsiteElement["styles"];
+
+  const safeContent = (() => {
+    const raw = element?.content as unknown;
+    if (raw == null) return "";
+    if (typeof raw === "string") return raw;
+    if (typeof raw === "number" || typeof raw === "boolean") return String(raw);
+    if (typeof raw === "object") {
+      const nested = raw as Record<string, unknown>;
+      if (typeof nested.content === "string") return nested.content;
+      if (typeof nested.text === "string") return nested.text;
+      try {
+        return JSON.stringify(raw);
+      } catch {
+        return "";
+      }
+    }
+    return "";
+  })();
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
@@ -70,8 +93,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
   const getElementStyle = () => {
     const inheritedFont = currentWebsite?.globalStyles?.fontFamily || "Inter";
     return {
-      ...element.styles,
-      fontFamily: element.styles.fontFamily || inheritedFont,
+      ...styles,
+      fontFamily: styles.fontFamily || inheritedFont,
       cursor: isPreviewMode ? "default" : "pointer",
     };
   };
@@ -81,7 +104,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       case "heading":
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative p-8 rounded-[1.5rem] cursor-pointer transition-all border-2 ${
               isSelected
@@ -103,7 +126,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
               </div>
             )}
             <h2
-              dangerouslySetInnerHTML={{ __html: element.content }}
+              dangerouslySetInnerHTML={{ __html: safeContent }}
               style={getElementStyle()}
             />
           </div>
@@ -112,7 +135,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       case "text":
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative p-8 rounded-[1.5rem] cursor-pointer transition-all border-2 prose max-w-none ${
               isSelected
@@ -134,14 +157,14 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
                 </button>
               </div>
             )}
-            <div dangerouslySetInnerHTML={{ __html: element.content }} />
+            <div dangerouslySetInnerHTML={{ __html: safeContent }} />
           </div>
         );
 
       case "button":
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative inline-block p-4 rounded-[1.5rem] cursor-pointer transition-all border-2 ${
               isSelected
@@ -162,14 +185,14 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
                 </button>
               </div>
             )}
-            {element.styles.href ? (
+            {styles.href ? (
               <a
-                href={element.styles.href}
+                href={styles.href}
                 style={{ textDecoration: "none" }}
                 onClick={(e) => {
                   if (isPreviewMode) {
                     e.stopPropagation();
-                    const href = element.styles.href;
+                    const href = styles.href;
                     if (href && href.startsWith("#")) {
                       e.preventDefault();
                       const targetEl = document.getElementById(href.substring(1));
@@ -186,7 +209,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
                   style={getElementStyle()}
                   className="transition-opacity hover:opacity-90 font-bold"
                 >
-                  {element.content}
+                  {safeContent}
                 </button>
               </a>
             ) : (
@@ -194,7 +217,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
                 style={getElementStyle()}
                 className="transition-opacity hover:opacity-90 font-bold"
               >
-                {element.content}
+                {safeContent}
               </button>
             )}
           </div>
@@ -204,7 +227,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
         const imgStyles = getElementStyle();
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative rounded-[1.5rem] cursor-pointer transition-all border-2 overflow-hidden ${
               isSelected
@@ -230,9 +253,9 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
                 </button>
               </div>
             )}
-            {element.content ? (
+            {safeContent ? (
               <img
-                src={element.content}
+                src={safeContent}
                 alt="Content"
                 style={{
                   width: "100%",
@@ -253,7 +276,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
         const vidStyles = getElementStyle();
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative rounded-[1.5rem] cursor-pointer transition-all border-2 overflow-hidden ${
               isSelected
@@ -280,7 +303,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
               </div>
             )}
             <iframe
-              src={element.content}
+              src={safeContent}
               style={{
                 width: "100%",
                 height: vidStyles.height || "400px",
@@ -295,13 +318,13 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
         );
 
       case "form":
-        const fields = element.styles.formFields || [
+        const fields = styles.formFields || [
           { id: "1", type: "text", label: "Name", placeholder: "Your name", required: true },
           { id: "2", type: "email", label: "Email", placeholder: "your@email.com", required: true }
         ];
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative p-8 rounded-[1.5rem] cursor-pointer transition-all border-2 ${
               isSelected
@@ -376,7 +399,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
                 type="submit"
                 className="px-6 py-3 bg-yellow-500 text-black rounded-xl font-black text-xs uppercase tracking-widest hover:bg-yellow-600 transition-all cursor-pointer shadow-sm"
               >
-                {element.styles.submitText || "Submit"}
+                {styles.submitText || "Submit"}
               </button>
             </form>
 
@@ -393,12 +416,12 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
                     }
                   }}
                   style={{
-                    backgroundColor: element.styles.donateBgColor || "#EF4444",
-                    color: element.styles.donateColor || "#FFFFFF",
+                    backgroundColor: styles.donateBgColor || "#EF4444",
+                    color: styles.donateColor || "#FFFFFF",
                   }}
                   className="w-full sm:w-auto px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest text-center shadow-md hover:opacity-90 transition-all hover:scale-[1.02] active:scale-[0.98] inline-block cursor-pointer"
                 >
-                  {element.styles.donateText || "Donate Now"}
+                  {styles.donateText || "Donate Now"}
                 </a>
               </div>
             )}
@@ -525,7 +548,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       case "grid":
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative p-8 rounded-[1.5rem] cursor-pointer transition-all border-2 ${
               isSelected
@@ -537,8 +560,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
               display: "grid",
               gridTemplateColumns: isMobileView
                 ? "1fr"
-                : `repeat(${element.styles.gridColumns || 2}, 1fr)`,
-              gap: element.styles.gap || "20px",
+                : `repeat(${styles.gridColumns || 3}, 1fr)`,
+              gap: styles.gap || "16px",
             }}
           >
             {isSelected && (
@@ -571,7 +594,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       case "columns":
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative p-8 rounded-[1.5rem] cursor-pointer transition-all border-2 ${
               isSelected
@@ -583,8 +606,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
               display: "grid",
               gridTemplateColumns: isMobileView
                 ? "1fr"
-                : `repeat(${element.styles.gridColumns || 2}, 1fr)`,
-              gap: element.styles.gap || "20px",
+                : `repeat(${styles.gridColumns || 2}, 1fr)`,
+              gap: styles.gap || "20px",
             }}
           >
             {isSelected && (
@@ -617,7 +640,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       case "slider":
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative p-8 rounded-[1.5rem] cursor-pointer transition-all border-2 ${
               isSelected
@@ -641,13 +664,13 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
             )}
             
             {/* Slider Content Overlay */}
-            {element.content && (
+            {safeContent && (
               <div 
                 className="absolute inset-0 z-10 flex items-center justify-center p-8 pointer-events-none"
               >
                 <div 
                   className="prose max-w-none text-center pointer-events-auto"
-                  dangerouslySetInnerHTML={{ __html: element.content }} 
+                  dangerouslySetInnerHTML={{ __html: safeContent }} 
                 />
               </div>
             )}
@@ -659,7 +682,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
                 slidesPerView={1}
                 navigation
                 pagination={{ clickable: true }}
-                autoplay={element.styles.autoplay ? { delay: 3000, disableOnInteraction: false } : false}
+                autoplay={styles.autoplay ? { delay: 3000, disableOnInteraction: false } : false}
                 className="w-full h-full rounded-[1.5rem] overflow-hidden"
               >
                 {element.children.map((child: WebsiteElement) => (
@@ -688,15 +711,15 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
 
       case "navbar": {
         const navStyles = getElementStyle();
-        const logo = element.styles.logoText || "My Campaign";
-        const links = element.styles.navLinks || [];
-        const showBtn = element.styles.showDonateBtn !== false;
-        const btnText = element.styles.donateBtnText || "Donate Now";
-        const btnHref = element.styles.donateBtnHref || "#donate";
+        const logo = styles.logoText || "My Campaign";
+        const links = styles.navLinks || [];
+        const showBtn = styles.showDonateBtn !== false;
+        const btnText = styles.donateBtnText || "Donate Now";
+        const btnHref = styles.donateBtnHref || "#donate";
 
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative rounded-[1.5rem] transition-all border-2 ${
               isSelected
@@ -873,17 +896,17 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
 
       case "footer": {
         const footerStyles = getElementStyle();
-        const copyright = element.styles.copyrightText || "© 2026 My Campaign. All rights reserved.";
-        const fb = element.styles.facebookUrl;
-        const tw = element.styles.twitterUrl;
-        const ig = element.styles.instagramUrl;
-        const yt = element.styles.youtubeUrl;
+        const copyright = styles.copyrightText || "© 2026 My Campaign. All rights reserved.";
+        const fb = styles.facebookUrl;
+        const tw = styles.twitterUrl;
+        const ig = styles.instagramUrl;
+        const yt = styles.youtubeUrl;
 
         const hasSocials = fb || tw || ig || yt;
 
         return (
           <div
-            id={element.styles.anchorId || element.id}
+            id={styles.anchorId || element.id}
             onClick={handleClick}
             className={`relative rounded-[1.5rem] transition-all border-2 ${
               isSelected

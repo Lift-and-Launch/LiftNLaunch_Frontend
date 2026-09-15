@@ -43,6 +43,46 @@ function formatDate(value) {
   }
 }
 
+/** Safely turn API/AI values into text React can render. */
+function toDisplayText(value, fallback = '') {
+  if (value == null || value === '') return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => toDisplayText(item, ''))
+      .filter(Boolean)
+      .join(', ');
+  }
+  if (typeof value === 'object') {
+    // Element-like or nested content objects from AI drafts
+    if (typeof value.content === 'string') return value.content;
+    if (typeof value.text === 'string') return value.text;
+    if (typeof value.message === 'string') return value.message;
+    if (typeof value.label === 'string') return value.label;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return fallback || '[object]';
+    }
+  }
+  return fallback;
+}
+
+function stripHtml(html) {
+  return String(html || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function previewLandingElement(el, index) {
+  const type = toDisplayText(el?.type, 'block');
+  const rawContent = toDisplayText(el?.content, '');
+  const preview = stripHtml(rawContent) || toDisplayText(el?.id, `block ${index + 1}`);
+  return { type, preview: preview.slice(0, 160) };
+}
+
 function CompletionRing({ percent }) {
   const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
   const radius = 36;
@@ -846,17 +886,22 @@ function LandingPanel({
                 {(draft.advisories || []).length > 0 && (
                   <ul className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-2xl p-4 space-y-1 font-bold">
                     {draft.advisories.map((a, i) => (
-                      <li key={i}>• {a.message || a.type}</li>
+                      <li key={i}>
+                        • {toDisplayText(a?.message || a?.type || a, 'Advisory')}
+                      </li>
                     ))}
                   </ul>
                 )}
 
-                <div className="max-h-40 overflow-auto bg-gray-50 rounded-2xl border border-gray-100 p-4 text-xs font-mono text-gray-600">
-                  {(draft.elements || []).slice(0, 6).map((el) => (
-                    <div key={el.id || el.type} className="truncate">
-                      [{el.type}] {el.content || el.id}
-                    </div>
-                  ))}
+                <div className="max-h-40 overflow-auto bg-gray-50 rounded-2xl border border-gray-100 p-4 text-xs font-mono text-gray-600 space-y-1">
+                  {(draft.elements || []).slice(0, 6).map((el, index) => {
+                    const { type, preview } = previewLandingElement(el, index);
+                    return (
+                      <div key={el?.id || `${type}-${index}`} className="truncate">
+                        [{type}] {preview}
+                      </div>
+                    );
+                  })}
                   {elementCount > 6 && <div>… +{elementCount - 6} more</div>}
                 </div>
 
@@ -967,7 +1012,7 @@ function AdsPanel({
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Headlines</p>
                     <ul className="text-sm font-black text-gray-900 space-y-1">
                       {content.headlines.map((h, i) => (
-                        <li key={i}>• {h}</li>
+                        <li key={i}>• {toDisplayText(h, `Headline ${i + 1}`)}</li>
                       ))}
                     </ul>
                   </div>
@@ -977,7 +1022,7 @@ function AdsPanel({
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Descriptions</p>
                     <ul className="text-sm font-bold text-gray-600 space-y-1">
                       {content.descriptions.map((d, i) => (
-                        <li key={i}>• {d}</li>
+                        <li key={i}>• {toDisplayText(d, `Description ${i + 1}`)}</li>
                       ))}
                     </ul>
                   </div>

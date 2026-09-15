@@ -290,14 +290,24 @@ const TopToolbar: React.FC = () => {
         </button>
 
         <button
-          onClick={() => {
+          onClick={async () => {
             let cid = currentWebsite?.campaignId;
             if (cid && typeof cid === "object") {
               cid = (cid as any)._id || (cid as any).id;
             }
-            navigate('/dashboard/campaign/publish', { state: { campaignId: cid } });
+            if (!cid) {
+              alert("No campaign is linked to this website yet. Open the builder from a campaign first.");
+              return;
+            }
+            try {
+              // Persist latest canvas before publishing so the public live page has content
+              await saveToLocalStorage();
+            } catch (err) {
+              console.error("Failed to save before publish:", err);
+            }
+            navigate("/dashboard/campaign/publish", { state: { campaignId: cid } });
           }}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest bg-yellow-500 text-black hover:bg-yellow-600 transition-all shadow-lg"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest bg-yellow-500 text-black hover:bg-yellow-600 transition-all shadow-lg cursor-pointer"
         >
           <span className="hidden sm:block">Publish</span>
         </button>

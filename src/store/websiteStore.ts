@@ -430,6 +430,9 @@ export const useWebsiteStore = create<WebsiteStore>(
             if (!website.campaignId) {
               website.campaignId = cid;
             }
+            // AI drafts can omit styles/ids — normalize before canvas render
+            const { normalizeWebsiteElements } = await import("../api/campaignAi");
+            website.elements = normalizeWebsiteElements(website.elements || []);
             set({
               currentWebsite: website,
               history: [website.elements],
