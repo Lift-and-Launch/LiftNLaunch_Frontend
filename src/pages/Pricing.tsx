@@ -1,9 +1,19 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import api from '../api/axios';
 import Seo from "../seo/Seo";
 import { pageSeo } from "../seo/seoConfig";
+import {
+  PRICING_RETURN_KEY,
+  getPricingReturnPath,
+  clearPricingReturnPath,
+} from "../utils/pricingNavigation";
+
+function pathFromLocationLike(from?: { pathname?: string; search?: string } | null) {
+  if (!from?.pathname || from.pathname.includes("/pricing")) return null;
+  return `${from.pathname}${from.search || ""}`;
+}
 
 const bronzegold = "/pricing/bronze-gold.png";
 const silverImg = "/pricing/silver.png";
@@ -110,13 +120,25 @@ const tiers: Tier[] = [
 export default function ConsultationTiers() {
   const [hovered, setHovered] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Persist where the user came from so Back still works after Stripe (full-page redirect clears router state).
+  useEffect(() => {
+    const fromState = pathFromLocationLike(
+      (location.state as { from?: { pathname?: string; search?: string } } | null)?.from
+    );
+    if (fromState) {
+      sessionStorage.setItem(PRICING_RETURN_KEY, fromState);
+    }
+  }, [location.state]);
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-    navigate("/dashboard");
+    const fromState = pathFromLocationLike(
+      (location.state as { from?: { pathname?: string; search?: string } } | null)?.from
+    );
+    const target = fromState || getPricingReturnPath() || "/dashboard";
+    clearPricingReturnPath();
+    navigate(target, { replace: true });
   };
 
   const handleGetStarted = async (planId: string) => {

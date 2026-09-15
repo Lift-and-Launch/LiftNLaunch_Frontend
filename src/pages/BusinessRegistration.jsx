@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Check, Upload } from 'lucide-react';
 import api from '../api/axios';
+import {
+  sanitizeAlphaName,
+  sanitizeAddress,
+  sanitizeBusinessText,
+  sanitizeDescription,
+  sanitizePhone,
+  sanitizeZip,
+  isValidEmail,
+  isValidPhone,
+  isValidZip,
+  isValidAlphaName,
+  scrollToFirstError,
+} from '../utils/formInput';
 
 export default function BusinessRegistration() {
   const navigate = useNavigate();
@@ -52,6 +65,17 @@ export default function BusinessRegistration() {
 
   const [selectedCategory, setSelectedCategory] = useState('');
   const [customCategory, setCustomCategory] = useState('');
+
+  const updateField = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   // Fetch campaign details on mount to populate existing business info
   useEffect(() => {
@@ -106,12 +130,6 @@ export default function BusinessRegistration() {
     }
   };
 
-  const handleCustomCategoryChange = (e) => {
-    const val = e.target.value;
-    setCustomCategory(val);
-    setFormData(prev => ({ ...prev, category: val }));
-  };
-
   const campaignType = location.state?.campaignType || 'reward';
 
   const validateStep = (currentStep) => {
@@ -126,26 +144,59 @@ export default function BusinessRegistration() {
         newErrors.category = "Category is required";
       }
       if (!formData.address.trim()) newErrors.address = "Address is required";
+      else if (formData.address.trim().length < 5) newErrors.address = "Please enter a fuller street address";
+
       if (!formData.city.trim()) newErrors.city = "City is required";
+      else if (!isValidAlphaName(formData.city)) newErrors.city = "City should contain letters only";
+
       if (!formData.state.trim()) newErrors.state = "State is required";
+      else if (!isValidAlphaName(formData.state)) newErrors.state = "State should contain letters only";
+
       if (!formData.zipCode.trim()) newErrors.zipCode = "Zip code is required";
+      else if (!isValidZip(formData.zipCode)) newErrors.zipCode = "Enter a valid zip/postal code (e.g. 12345 or 12345-6789)";
     } else if (currentStep === 2) {
       if (!formData.description.trim()) newErrors.description = "Description is required";
+      else if (formData.description.trim().length < 20) newErrors.description = "Description should be at least 20 characters";
       else if (formData.description.trim().length > 1000) newErrors.description = "Description cannot exceed 1000 characters";
       
       if (!formData.productsServices.trim()) newErrors.productsServices = "Products/Services Offered is required";
+      else if (formData.productsServices.trim().length < 3) newErrors.productsServices = "Please describe what you offer";
     } else if (currentStep === 3) {
       if (!formData.email.trim()) newErrors.email = "Email is required";
-      else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Please enter a valid email address";
+      else if (!isValidEmail(formData.email)) newErrors.email = "Please enter a valid email address";
       
       if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
+      else if (!isValidPhone(formData.phone)) newErrors.phone = "Enter a valid phone number (7–15 digits)";
       
       if (!confirmedAccurate) newErrors.confirmedAccurate = "You must confirm that the information is accurate";
       if (!agreedToTerms) newErrors.agreedToTerms = "You must agree to the Terms & Privacy Policy";
     }
     
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    if (!isValid) {
+      scrollToFirstError(
+        newErrors,
+        [
+          'businessName',
+          'category',
+          'address',
+          'city',
+          'state',
+          'zipCode',
+          'description',
+          'productsServices',
+          'email',
+          'phone',
+          'confirmedAccurate',
+          'agreedToTerms',
+        ],
+        {
+          category: selectedCategory === 'Other' ? 'customCategory' : 'category',
+        }
+      );
+    }
+    return isValid;
   };
 
   const handleNext = async () => {
@@ -154,6 +205,7 @@ export default function BusinessRegistration() {
     if (step < 3) {
       setStep(step + 1);
       setErrors({});
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       try {
         const campaignId = location.state?.campaignId;
@@ -242,13 +294,15 @@ export default function BusinessRegistration() {
                   <label htmlFor="businessName" className="block text-sm font-black text-gray-900 mb-2">Business Name</label>
                   <input 
                     id="businessName"
-                    type="text" 
+                    type="text"
+                    autoComplete="organization"
+                    maxLength={120}
                     placeholder="Enter your business name"
                     className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold placeholder:text-gray-300 ${
                       errors.businessName ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                     }`}
                     value={formData.businessName}
-                    onChange={(e) => setFormData({...formData, businessName: e.target.value})}
+                    onChange={(e) => updateField('businessName', sanitizeBusinessText(e.target.value))}
                   />
                   {errors.businessName && <p className="text-red-500 text-xs mt-1 font-bold">{errors.businessName}</p>}
                 </div>
@@ -277,13 +331,18 @@ export default function BusinessRegistration() {
                       <label htmlFor="customCategory" className="block text-sm font-black text-gray-900 mb-2 text-yellow-600">Specify Category</label>
                       <input 
                         id="customCategory"
-                        type="text" 
+                        type="text"
+                        maxLength={60}
                         placeholder="e.g. Comics, Virtual Reality Art"
                         className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold placeholder:text-gray-300 ${
                           errors.category ? 'border-red-500 focus:ring-red-500 animate-shake' : 'border-gray-200 focus:ring-yellow-500'
                         }`}
                         value={customCategory}
-                        onChange={handleCustomCategoryChange}
+                        onChange={(e) => {
+                          const val = sanitizeBusinessText(e.target.value, 60);
+                          setCustomCategory(val);
+                          setFormData((prev) => ({ ...prev, category: val }));
+                        }}
                       />
                     </div>
                   )}
@@ -307,13 +366,15 @@ export default function BusinessRegistration() {
                   <label htmlFor="address" className="block text-sm font-black text-gray-900 mb-2">Address</label>
                   <input 
                     id="address"
-                    type="text" 
+                    type="text"
+                    autoComplete="street-address"
+                    maxLength={200}
                     placeholder="Street address..."
                     className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold placeholder:text-gray-300 ${
                       errors.address ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                     }`}
                     value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    onChange={(e) => updateField('address', sanitizeAddress(e.target.value))}
                   />
                   {errors.address && <p className="text-red-500 text-xs mt-1 font-bold">{errors.address}</p>}
                 </div>
@@ -322,12 +383,16 @@ export default function BusinessRegistration() {
                     <label htmlFor="city" className="block text-sm font-black text-gray-900 mb-2">City</label>
                     <input 
                       id="city"
-                      type="text" 
+                      type="text"
+                      autoComplete="address-level2"
+                      maxLength={80}
+                      inputMode="text"
+                      placeholder="City"
                       className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold ${
                         errors.city ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`} 
                       value={formData.city} 
-                      onChange={e => setFormData({...formData, city: e.target.value})} 
+                      onChange={(e) => updateField('city', sanitizeAlphaName(e.target.value))}
                     />
                     {errors.city && <p className="text-red-500 text-xs mt-1 font-bold">{errors.city}</p>}
                   </div>
@@ -335,12 +400,15 @@ export default function BusinessRegistration() {
                      <label htmlFor="state" className="block text-sm font-black text-gray-900 mb-2">State</label>
                      <input 
                        id="state"
-                       type="text" 
+                       type="text"
+                       autoComplete="address-level1"
+                       maxLength={80}
+                       placeholder="State"
                        className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold ${
                          errors.state ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                        }`} 
                        value={formData.state} 
-                       onChange={e => setFormData({...formData, state: e.target.value})} 
+                       onChange={(e) => updateField('state', sanitizeAlphaName(e.target.value))}
                      />
                      {errors.state && <p className="text-red-500 text-xs mt-1 font-bold">{errors.state}</p>}
                   </div>
@@ -348,12 +416,16 @@ export default function BusinessRegistration() {
                     <label htmlFor="zipCode" className="block text-sm font-black text-gray-900 mb-2">Zip Code</label>
                     <input 
                       id="zipCode"
-                      type="text" 
+                      type="text"
+                      autoComplete="postal-code"
+                      inputMode="numeric"
+                      maxLength={12}
+                      placeholder="e.g. 12345"
                       className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold ${
                         errors.zipCode ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`} 
                       value={formData.zipCode} 
-                      onChange={e => setFormData({...formData, zipCode: e.target.value})} 
+                      onChange={(e) => updateField('zipCode', sanitizeZip(e.target.value))}
                     />
                     {errors.zipCode && <p className="text-red-500 text-xs mt-1 font-bold">{errors.zipCode}</p>}
                   </div>
@@ -373,14 +445,17 @@ export default function BusinessRegistration() {
                   <textarea 
                     id="description"
                     rows={4}
+                    maxLength={1000}
                     placeholder="Briefly explain what you do and who it's for"
                     className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold placeholder:text-gray-300 resize-none ${
                       errors.description ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                     }`}
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => updateField('description', sanitizeDescription(e.target.value))}
                   />
-                  <span className="absolute bottom-4 right-4 text-xs font-bold text-gray-400">Max 1000 characters. Keep it simple and customer-focused.</span>
+                  <span className="absolute bottom-4 right-4 text-xs font-bold text-gray-400">
+                    {formData.description.length}/1000
+                  </span>
                 </div>
                 {errors.description && <p className="text-red-500 text-xs mt-1 font-bold">{errors.description}</p>}
               </div>
@@ -389,13 +464,14 @@ export default function BusinessRegistration() {
                 <label htmlFor="productsServices" className="block text-sm font-black text-gray-900 mb-2">Products / Services Offered</label>
                 <input 
                   id="productsServices"
-                  type="text" 
+                  type="text"
+                  maxLength={200}
                   placeholder="e.g. Web design, Home cleaning, Handmade crafts"
                   className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold placeholder:text-gray-300 ${
                     errors.productsServices ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                   }`}
                   value={formData.productsServices}
-                  onChange={(e) => setFormData({...formData, productsServices: e.target.value})}
+                  onChange={(e) => updateField('productsServices', sanitizeBusinessText(e.target.value, 200))}
                 />
                 {errors.productsServices && <p className="text-red-500 text-xs mt-1 font-bold">{errors.productsServices}</p>}
               </div>
@@ -432,13 +508,16 @@ export default function BusinessRegistration() {
                   <label htmlFor="email" className="block text-sm font-black text-gray-900 mb-2">Business Email</label>
                   <input 
                     id="email"
-                    type="email" 
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    maxLength={120}
                     placeholder="e.g. name@business.com"
                     className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold ${
                       errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                     }`}
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => updateField('email', e.target.value.trim().slice(0, 120))}
                   />
                   {errors.email && <p className="text-red-500 text-xs mt-1 font-bold">{errors.email}</p>}
                 </div>
@@ -446,13 +525,16 @@ export default function BusinessRegistration() {
                   <label htmlFor="phone" className="block text-sm font-black text-gray-900 mb-2">Phone Number</label>
                   <input 
                     id="phone"
-                    type="tel" 
-                    placeholder="e.g. +91 XXXXX XXXXX"
+                    type="tel"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    maxLength={20}
+                    placeholder="e.g. +1 555 123 4567"
                     className={`w-full px-6 py-4 rounded-xl border bg-white focus:ring-2 transition-all font-bold ${
                       errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                     }`}
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => updateField('phone', sanitizePhone(e.target.value))}
                   />
                   {errors.phone && <p className="text-red-500 text-xs mt-1 font-bold">{errors.phone}</p>}
                 </div>

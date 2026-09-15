@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   User as UserIcon,
   Mail,
@@ -15,10 +15,12 @@ import {
   ChevronLeft
 } from "lucide-react";
 import api from "../api/axios";
+import { goToPricing } from "../utils/pricingNavigation";
 
 export default function Profile() {
   const { user, refreshUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [refreshing, setRefreshing] = useState(false);
   const [businesses, setBusinesses] = useState([]);
   const [loadingBiz, setLoadingBiz] = useState(false);
@@ -229,7 +231,7 @@ export default function Profile() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate("/pricing")}
+                    onClick={() => goToPricing(navigate, location)}
                     className="px-8 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                   >
                     View Pricing Plans

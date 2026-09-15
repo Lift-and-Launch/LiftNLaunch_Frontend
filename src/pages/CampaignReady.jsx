@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { goToPricing } from '../utils/pricingNavigation';
 
 export default function CampaignReady() {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export default function CampaignReady() {
 
   const handleGenerate = () => {
     if (user && !user.isSubscribed) {
-      navigate('/pricing');
+      goToPricing(navigate, location);
     } else {
       navigate('/dashboard/campaign/builder', { state: location.state });
     }
@@ -23,7 +24,7 @@ export default function CampaignReady() {
       return;
     }
     if (user && !user.isSubscribed) {
-      navigate('/pricing');
+      goToPricing(navigate, location);
       return;
     }
     navigate(`/dashboard/campaign/${campaignId}/ai`);
