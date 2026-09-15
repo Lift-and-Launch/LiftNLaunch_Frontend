@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Check, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Upload, X } from 'lucide-react';
 import api from '../api/axios';
 import {
   sanitizeAlphaName,
@@ -19,6 +19,7 @@ import {
 export default function BusinessRegistration() {
   const navigate = useNavigate();
   const location = useLocation();
+  const logoInputRef = useRef(null);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     businessName: '',
@@ -40,6 +41,7 @@ export default function BusinessRegistration() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const categoriesList = [
     "art",
@@ -90,9 +92,11 @@ export default function BusinessRegistration() {
         if (response.data.success && response.data.data) {
           const campaign = response.data.data;
           if (campaign.businessInfo) {
+            const info = campaign.businessInfo;
             setFormData(prev => ({
               ...prev,
-              ...campaign.businessInfo
+              ...info,
+              logo: info.logo || info.logoUrl || null,
             }));
             setConfirmedAccurate(true);
             setAgreedToTerms(true);
@@ -212,12 +216,25 @@ export default function BusinessRegistration() {
         if (!campaignId) throw new Error('Campaign ID not found');
 
         const response = await api.put(`/campaigns/${campaignId}/business`, {
-          businessInfo: formData,
+          businessInfo: {
+            ...formData,
+            logo: formData.logo || null,
+            logoUrl: formData.logo || null,
+          },
           campaignType: location.state?.campaignType
         });
 
         if (response.data.success) {
-          navigate('/dashboard/campaign/configure', { state: { ...location.state, businessInfo: formData } });
+          navigate('/dashboard/campaign/configure', {
+            state: {
+              ...location.state,
+              businessInfo: {
+                ...formData,
+                logo: formData.logo || null,
+                logoUrl: formData.logo || null,
+              },
+            },
+          });
         }
       } catch (error) {
         console.error('Error registering business:', error);
@@ -241,6 +258,51 @@ export default function BusinessRegistration() {
         ? prev.targetAudience.filter(a => a !== audience)
         : [...prev.targetAudience, audience]
     }));
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrors((prev) => ({ ...prev, logo: 'Please select an image file (PNG or JPG)' }));
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, logo: 'Logo must be under 5MB' }));
+      return;
+    }
+
+    setUploadingLogo(true);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.logo;
+      return next;
+    });
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData((prev) => ({ ...prev, logo: String(reader.result || '') }));
+      setUploadingLogo(false);
+    };
+    reader.onerror = () => {
+      setErrors((prev) => ({ ...prev, logo: 'Failed to read image file' }));
+      setUploadingLogo(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const clearLogo = () => {
+    setFormData((prev) => ({ ...prev, logo: null }));
+    if (logoInputRef.current) logoInputRef.current.value = '';
+    setErrors((prev) => {
+      if (!prev.logo) return prev;
+      const next = { ...prev };
+      delete next.logo;
+      return next;
+    });
   };
 
   const renderStepIcon = (num, label) => (
@@ -542,13 +604,64 @@ export default function BusinessRegistration() {
 
               <div>
                 <label className="block text-sm font-black text-gray-900 mb-2">Upload Business Logo (Optional)</label>
-                <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 bg-white/50 hover:bg-white transition-all cursor-pointer group">
-                   <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-yellow-100 group-hover:text-yellow-600 transition-all">
-                      <Upload size={20} />
-                   </div>
-                   <span className="font-bold text-sm text-gray-400 group-hover:text-gray-900 transition-colors">Recommended size 500x500px (PNG/JPG)</span>
-                   <button className="bg-gray-100 px-6 py-2 rounded-lg font-black text-xs uppercase tracking-widest text-gray-600 group-hover:bg-yellow-500 group-hover:text-black transition-all">Upload Image</button>
-                </div>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+                {formData.logo ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white p-6 flex flex-col sm:flex-row items-center gap-6">
+                    <img
+                      src={formData.logo}
+                      alt="Business logo preview"
+                      className="w-28 h-28 object-contain rounded-xl bg-gray-50 border border-gray-100"
+                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => logoInputRef.current?.click()}
+                        className="cursor-pointer px-5 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-black text-xs font-black uppercase tracking-widest"
+                      >
+                        Change logo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearLogo}
+                        className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 text-red-600 text-xs font-black uppercase tracking-widest hover:bg-red-50"
+                      >
+                        <X size={14} /> Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={uploadingLogo}
+                    className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 bg-white/50 hover:bg-white hover:border-yellow-400 transition-all cursor-pointer group disabled:opacity-60 disabled:cursor-wait"
+                  >
+                    {uploadingLogo ? (
+                      <span className="text-sm font-bold text-gray-500">Uploading…</span>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-yellow-100 group-hover:text-yellow-600 transition-all">
+                          <Upload size={20} />
+                        </div>
+                        <span className="font-bold text-sm text-gray-400 group-hover:text-gray-900 transition-colors">
+                          Recommended size 500x500px (PNG/JPG)
+                        </span>
+                        <span className="bg-yellow-400 group-hover:bg-yellow-500 px-6 py-2 rounded-lg font-black text-xs uppercase tracking-widest text-black transition-all">
+                          Upload Image
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )}
+                {errors.logo && (
+                  <p className="text-red-500 text-xs mt-2 font-bold">{errors.logo}</p>
+                )}
               </div>
 
               <div className="space-y-4 pt-4">
