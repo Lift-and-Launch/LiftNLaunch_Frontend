@@ -164,16 +164,26 @@ const TopToolbar: React.FC = () => {
           <input type="email" placeholder="Email" class="${className}">
           <button type="submit" class="${className}">${element.styles.submitText || "Submit"}</button>
         </form>`;
-      case "grid":
-      case "columns":
-        const childrenHTML =
+      case "grid": {
+        const gridChildren =
           element.children
             ?.map(
               (child: any, childIndex: number) =>
-                `<div class="${className}-child-${childIndex}">${generateElementHTML(child, childIndex)}</div>`,
+                `<div class="${className}-cell-${childIndex}" style="min-width:0">${generateElementHTML(child, childIndex)}</div>`,
             )
             .join("\n") || "";
-        return `<div class="${className}">${childrenHTML}</div>`;
+        return `<div class="${className}" style="display:grid;grid-template-columns:repeat(${element.styles?.gridColumns || 3},minmax(0,1fr));gap:${element.styles?.gap || "20px"}">${gridChildren}</div>`;
+      }
+      case "columns": {
+        const colChildren =
+          element.children
+            ?.map(
+              (child: any, childIndex: number) =>
+                `<div class="${className}-col-${childIndex}" style="flex:1;min-width:0">${generateElementHTML(child, childIndex)}</div>`,
+            )
+            .join("\n") || "";
+        return `<div class="${className}" style="display:flex;flex-direction:row;flex-wrap:nowrap;gap:${element.styles?.gap || "24px"};align-items:stretch">${colChildren}</div>`;
+      }
       case "slider":
         return `<div class="${className}">
           <h3>Slider Content</h3>
@@ -290,10 +300,15 @@ const TopToolbar: React.FC = () => {
         </button>
 
         <button
-          onClick={() => {
+          onClick={async () => {
+            await saveToLocalStorage();
             let cid = currentWebsite?.campaignId;
             if (cid && typeof cid === "object") {
               cid = (cid as any)._id || (cid as any).id;
+            }
+            if (!cid) {
+              alert("No campaign is linked to this website. Save and try again.");
+              return;
             }
             navigate('/dashboard/campaign/publish', { state: { campaignId: cid } });
           }}

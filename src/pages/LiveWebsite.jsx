@@ -18,11 +18,14 @@ export default function LiveWebsite() {
         if (response.data.success && response.data.data) {
           setWebsiteData(response.data.data);
         } else {
-          setError("Website not found");
+          setError(response.data.message || "Website not found");
         }
       } catch (err) {
         console.error("Failed to load live website:", err);
-        setError(err.response?.data?.message || "Failed to load website details.");
+        setError(
+          err.response?.data?.message ||
+            "Failed to load website details. Make sure the campaign is published and the landing page was saved in the builder."
+        );
       } finally {
         setLoading(false);
       }

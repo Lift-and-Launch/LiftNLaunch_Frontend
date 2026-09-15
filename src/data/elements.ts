@@ -13,7 +13,7 @@ export const structures: StructureCategory[] = [
         icon: "LayoutGrid",
         defaultContent: "",
         defaultStyles: {
-          gridColumns: 2,
+          gridColumns: 3,
           gap: "20px",
           padding: "20px",
           minHeight: "100px",
@@ -28,11 +28,14 @@ export const structures: StructureCategory[] = [
         defaultContent: "",
         defaultStyles: {
           gridColumns: 2,
-          gap: "20px",
+          gap: "24px",
           padding: "20px",
           minHeight: "100px",
-          backgroundColor: "#f9fafb",
+          backgroundColor: "#ffffff",
           borderRadius: "8px",
+          borderWidth: "1px",
+          borderStyle: "dashed",
+          borderColor: "#e5e7eb",
         },
       },
       {

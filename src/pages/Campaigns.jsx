@@ -169,8 +169,14 @@ const Campaigns = () => {
                     <span className="text-sm font-normal">Raised</span>
                   </p>
                   <Link
+                    to={`/live/${camp.id}`}
+                    className="mt-4 inline-block bg-yellow-400 text-black px-4 py-2 rounded font-medium text-sm hover:bg-yellow-500 transition mr-2"
+                  >
+                    Visit Landing Page
+                  </Link>
+                  <Link
                     to={`/campaigns/${camp.id}`}
-                    className="mt-4 inline-block bg-yellow-400 text-black px-4 py-2 rounded font-medium text-sm hover:bg-yellow-500 transition"
+                    className="mt-4 inline-block bg-white/20 text-white px-4 py-2 rounded font-medium text-sm hover:bg-white/30 transition"
                   >
                     View Details
                   </Link>

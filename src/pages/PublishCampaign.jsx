@@ -57,6 +57,13 @@ export default function PublishCampaign() {
         alert("No campaign ID found to publish. Please go back and try again.");
         return;
       }
+
+      // Ensure a website document exists and latest builder content is persisted
+      try {
+        await api.get(`/websites/${campaignId}?v=A`);
+      } catch (websiteErr) {
+        console.warn("Website preload before publish failed:", websiteErr);
+      }
       
       const response = await api.put(`/campaigns/${campaignId}/publish`);
       if (response.data.success) {

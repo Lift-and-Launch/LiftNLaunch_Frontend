@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -9,10 +9,33 @@ import {
   Mail, 
   Linkedin, 
   Video as VideoIcon,
-  FileText
+  FileText,
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+
+const CAMPAIGN_CATEGORIES = [
+  'Technology',
+  'Social Good',
+  'Creative Arts',
+  'Food & Beverage',
+  'Health & Wellness',
+  'Education',
+  'Fashion',
+  'Environment',
+  'Film & Video',
+  'Music',
+  'Games',
+  'Sports',
+  'Travel',
+  'Design',
+  'Publishing',
+  'Real Estate',
+  'Finance',
+  'Retail',
+];
 
 export default function CampaignConfiguration() {
   const { user } = useAuth();
@@ -20,6 +43,7 @@ export default function CampaignConfiguration() {
   const location = useLocation();
   const activeType = location.state?.campaignType || 'reward';
   const businessInfo = location.state?.businessInfo || {};
+  const coverInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     basics: {
@@ -58,6 +82,8 @@ export default function CampaignConfiguration() {
   const [errors, setErrors] = useState({});
   const [stripeClientId, setStripeClientId] = useState('');
   const [showStrategyHelper, setShowStrategyHelper] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
 
   useEffect(() => {
     const fetchStripeConfig = async () => {
@@ -92,11 +118,15 @@ export default function CampaignConfiguration() {
           }
           if (campaign.campaignConfig) {
             const config = campaign.campaignConfig;
+            const savedCategory = config.basics?.category || '';
+            const isKnown = CAMPAIGN_CATEGORIES.includes(savedCategory);
+            setSelectedCategory(savedCategory ? (isKnown ? savedCategory : 'Other') : '');
+            setCustomCategory(savedCategory && !isKnown ? savedCategory : '');
             setFormData(prev => ({
               ...prev,
               basics: {
                 name: config.basics?.name || '',
-                category: config.basics?.category || '',
+                category: savedCategory,
                 tagline: config.basics?.tagline || '',
                 goal: config.basics?.goal || '',
                 duration: config.basics?.duration === 36500 || config.basics?.duration === '36500' 
@@ -137,6 +167,58 @@ export default function CampaignConfiguration() {
     fetchCampaign();
   }, [location.state?.campaignId]);
 
+  const updateBasics = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      basics: { ...prev.basics, [field]: value },
+    }));
+  };
+
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    setSelectedCategory(value);
+    if (value === 'Other') {
+      updateBasics('category', customCategory.trim());
+    } else {
+      setCustomCategory('');
+      updateBasics('category', value);
+    }
+  };
+
+  const handleCustomCategoryChange = (e) => {
+    const value = e.target.value;
+    setCustomCategory(value);
+    updateBasics('category', value);
+  };
+
+  const handleCoverImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrors(prev => ({ ...prev, coverImage: 'Please select an image file' }));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, coverImage: 'Image must be under 5MB' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData(prev => ({ ...prev, coverImage: String(reader.result || '') }));
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next.coverImage;
+        return next;
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearCoverImage = () => {
+    setFormData(prev => ({ ...prev, coverImage: '' }));
+    if (coverInputRef.current) coverInputRef.current.value = '';
+  };
+
   const validateForm = () => {
     const newErrors = {};
     
@@ -147,8 +229,10 @@ export default function CampaignConfiguration() {
       newErrors.name = "Campaign name must be at least 3 characters";
     }
     
-    if (!formData.basics.category) {
-      newErrors.category = "Campaign category is required";
+    if (!formData.basics.category?.trim()) {
+      newErrors.category = selectedCategory === 'Other'
+        ? 'Please specify your custom category'
+        : 'Campaign category is required';
     }
     
     if (!formData.basics.tagline?.trim()) {
@@ -295,13 +379,6 @@ export default function CampaignConfiguration() {
     }
   };
 
-  const updateBasics = (field, value) => {
-    setFormData({
-      ...formData,
-      basics: { ...formData.basics, [field]: value }
-    });
-  };
-
   const updateReward = (index, field, value) => {
     const newRewards = [...formData.rewards];
     newRewards[index] = { ...newRewards[index], [field]: value };
@@ -385,14 +462,32 @@ export default function CampaignConfiguration() {
                   className={`w-full px-6 py-4 rounded-xl border bg-white font-bold transition-all ${
                     errors.category ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                   }`}
-                  value={formData.basics.category}
-                  onChange={e => updateBasics('category', e.target.value)}
+                  value={selectedCategory}
+                  onChange={handleCategoryChange}
                 >
                   <option value="">-- Choose Category --</option>
-                  <option value="Technology">Technology</option>
-                  <option value="Social Good">Social Good</option>
-                  <option value="Creative Arts">Creative Arts</option>
+                  {CAMPAIGN_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="Other">Other (add your own)</option>
                 </select>
+                {selectedCategory === 'Other' && (
+                  <div className="mt-4">
+                    <label htmlFor="customCategory" className="block text-sm font-black text-yellow-700 mb-2 uppercase tracking-wide">
+                      Specify Category
+                    </label>
+                    <input
+                      id="customCategory"
+                      type="text"
+                      placeholder="e.g. Clean Energy, SaaS Tools"
+                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold transition-all ${
+                        errors.category ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
+                      }`}
+                      value={customCategory}
+                      onChange={handleCustomCategoryChange}
+                    />
+                  </div>
+                )}
                 {errors.category && <p className="text-red-500 text-xs mt-1 font-bold">{errors.category}</p>}
               </div>
             </div>
@@ -824,9 +919,52 @@ export default function CampaignConfiguration() {
              <div className="space-y-8">
                 <div>
                   <label className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Cover Image upload</label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 bg-white/50 hover:bg-white transition-all cursor-pointer group">
-                    <div className="bg-gray-100 px-6 py-2 rounded-lg font-black text-xs uppercase tracking-widest text-gray-600 group-hover:bg-yellow-500 group-hover:text-black transition-all">Upload Image</div>
-                  </div>
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverImageChange}
+                  />
+                  {formData.coverImage ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white">
+                      <img
+                        src={formData.coverImage}
+                        alt="Cover preview"
+                        className="w-full max-h-72 object-cover"
+                      />
+                      <div className="absolute top-3 right-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => coverInputRef.current?.click()}
+                          className="px-4 py-2 bg-white/95 text-gray-900 rounded-lg text-[10px] font-black uppercase tracking-widest shadow"
+                        >
+                          Replace
+                        </button>
+                        <button
+                          type="button"
+                          onClick={clearCoverImage}
+                          className="p-2 bg-red-500 text-white rounded-lg shadow"
+                          title="Remove image"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => coverInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 bg-white/50 hover:bg-white transition-all cursor-pointer group"
+                    >
+                      <ImageIcon size={28} className="text-gray-300 group-hover:text-yellow-500 transition-all" />
+                      <div className="bg-gray-100 px-6 py-2 rounded-lg font-black text-xs uppercase tracking-widest text-gray-600 group-hover:bg-yellow-500 group-hover:text-black transition-all">
+                        Upload Image
+                      </div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">PNG, JPG up to 5MB</p>
+                    </button>
+                  )}
+                  {errors.coverImage && <p className="text-red-500 text-xs mt-2 font-bold">{errors.coverImage}</p>}
                 </div>
                 <div>
                   <label htmlFor="videoUrl" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Video URL input (Optional)</label>

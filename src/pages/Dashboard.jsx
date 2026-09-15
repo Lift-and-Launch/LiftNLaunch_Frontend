@@ -16,8 +16,6 @@ import {
   LogOut,
   Plus,
   Trash2,
-  Megaphone,
-  CheckCircle2,
   Sparkles,
   Star,
   Rocket,
@@ -28,6 +26,7 @@ import {
 import CreateCampaignForm from '../components/CreateCampaignForm';
 import api from '../api/axios';
 import AdminDashboardView from '../components/AdminDashboardView';
+import { canAccessPremiumFeatures, hasActiveSubscription } from '../utils/subscription';
 
 const scrollToSection = (id) => {
   const element = document.getElementById(id);
@@ -35,6 +34,37 @@ const scrollToSection = (id) => {
     element.scrollIntoView({ behavior: 'smooth' });
   }
 };
+
+function getSubscriptionBadge(plan) {
+  const key = String(plan || '').toLowerCase();
+  if (key === 'gold') {
+    return {
+      wrap: 'bg-gradient-to-r from-amber-400/15 to-yellow-500/15 border-amber-400/35 text-amber-700',
+      star: 'text-amber-500 fill-amber-500',
+      label: 'Gold Subscriber',
+    };
+  }
+  if (key === 'silver') {
+    return {
+      wrap: 'bg-gradient-to-r from-slate-300/25 to-slate-500/15 border-slate-400/40 text-slate-700',
+      star: 'text-slate-500 fill-slate-400',
+      label: 'Silver Subscriber',
+    };
+  }
+  if (key === 'bronze') {
+    return {
+      wrap: 'bg-gradient-to-r from-orange-400/15 to-amber-700/15 border-orange-500/30 text-orange-800',
+      star: 'text-orange-600 fill-orange-600',
+      label: 'Bronze Subscriber',
+    };
+  }
+  const fallback = key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Premium';
+  return {
+    wrap: 'bg-gradient-to-r from-yellow-400/10 to-orange-500/10 border-yellow-500/20 text-yellow-600',
+    star: 'text-yellow-500 fill-yellow-500',
+    label: `${fallback} Subscriber`,
+  };
+}
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -63,18 +93,7 @@ const UserDashboardView = ({ logout, user }) => {
   const [campaigns, setCampaigns] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [stripeClientId, setStripeClientId] = React.useState('');
-
-  // Google Ads states
-  const [googleAccounts, setGoogleAccounts] = React.useState([]);
-  const [selectedAccount, setSelectedAccount] = React.useState('');
-  const [loadingAccounts, setLoadingAccounts] = React.useState(false);
-  const [adMsg, setAdMsg] = React.useState('');
-
-  // Meta Ads states
-  const [metaAccounts, setMetaAccounts] = React.useState([]);
-  const [selectedMetaAccount, setSelectedMetaAccount] = React.useState('');
-  const [loadingMetaAccounts, setLoadingMetaAccounts] = React.useState(false);
-  const [metaMsg, setMetaMsg] = React.useState('');
+  const planBadge = getSubscriptionBadge(user.subscription?.plan);
 
   React.useEffect(() => {
     const fetchCampaigns = async () => {
@@ -104,112 +123,6 @@ const UserDashboardView = ({ logout, user }) => {
       fetchStripeConfig();
     }
   }, [user.stripeAccountId]);
-
-  // Google Ads accounts fetching
-  React.useEffect(() => {
-    if (user.googleRefreshToken && !user.googleAdAccountId) {
-      const fetchAccounts = async () => {
-        setLoadingAccounts(true);
-        try {
-          const response = await api.get('/ads/google/accounts');
-          if (response.data.success && response.data.data) {
-            setGoogleAccounts(response.data.data);
-            if (response.data.data.length > 0) {
-              setSelectedAccount(response.data.data[0]);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching Google Ads accounts:', error);
-        } finally {
-          setLoadingAccounts(false);
-        }
-      };
-      fetchAccounts();
-    }
-  }, [user.googleRefreshToken, user.googleAdAccountId]);
-
-  // Meta Ads accounts fetching
-  React.useEffect(() => {
-    if (user.metaAccessToken && !user.metaAdAccountId) {
-      const fetchMetaAccounts = async () => {
-        setLoadingMetaAccounts(true);
-        try {
-          const response = await api.get('/ads/meta/accounts');
-          if (response.data.success && response.data.data) {
-            setMetaAccounts(response.data.data);
-            if (response.data.data.length > 0) {
-              setSelectedMetaAccount(response.data.data[0].id);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching Meta Ads accounts:', error);
-        } finally {
-          setLoadingMetaAccounts(false);
-        }
-      };
-      fetchMetaAccounts();
-    }
-  }, [user.metaAccessToken, user.metaAdAccountId]);
-
-  const handleConnectGoogleAds = async () => {
-    try {
-      const response = await api.get('/ads/google/auth-url');
-      if (response.data.success && response.data.url) {
-        window.location.href = response.data.url;
-      }
-    } catch (error) {
-      console.error('Failed to get Google Ads auth URL:', error);
-      alert('Failed to connect Google Ads.');
-    }
-  };
-
-  const handleLinkGoogleAccount = async () => {
-    if (!selectedAccount) return;
-    try {
-      const response = await api.post('/ads/google/select-account', {
-        customerId: selectedAccount
-      });
-      if (response.data.success) {
-        setAdMsg('Google Ad Account linked successfully! Reloading...');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-      }
-    } catch (error) {
-      console.error('Failed to link account:', error);
-      alert('Failed to link account.');
-    }
-  };
-
-  const handleConnectMetaAds = async () => {
-    try {
-      const response = await api.get('/ads/meta/auth-url');
-      if (response.data.success && response.data.url) {
-        window.location.href = response.data.url;
-      }
-    } catch (error) {
-      console.error('Failed to get Meta Ads auth URL:', error);
-      alert('Failed to connect Meta Ads.');
-    }
-  };
-
-  const handleLinkMetaAccount = async () => {
-    if (!selectedMetaAccount) return;
-    try {
-      const response = await api.post('/ads/meta/select-account', {
-        adAccountId: selectedMetaAccount
-      });
-      if (response.data.success) {
-        setMetaMsg('Meta Ad Account linked successfully! Reloading...');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-      }
-    } catch (error) {
-      console.error('Failed to link Meta account:', error);
-      alert('Failed to link Meta account.');
-    }
-  };
 
   const handleTogglePayment = async (campaignId, currentVal) => {
     const newVal = !currentVal;
@@ -313,13 +226,16 @@ const UserDashboardView = ({ logout, user }) => {
           <div className="mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
              <div>
                 <h2 className="text-3xl font-black text-gray-900 tracking-tight">Welcome back, {user.name}! 👋</h2>
-                <p className="text-gray-400 font-bold text-sm mt-1">Here is the active summary of your workspace, connected ad accounts, and traffic metrics.</p>
+                <p className="text-gray-400 font-bold text-sm mt-1">Here is the active summary of your workspace and campaign metrics.</p>
              </div>
-             {user.isSubscribed && (
-               <div className="flex items-center gap-2 self-start sm:self-center px-4 py-2.5 bg-gradient-to-r from-yellow-400/10 to-orange-500/10 border border-yellow-500/20 rounded-2xl text-xs font-black text-yellow-600 uppercase tracking-wide">
-                 <Star size={14} className="text-yellow-500 fill-yellow-500" /> Premium Subscriber
+             {user.isSubscribed ? (
+               <div
+                 className={`flex items-center gap-2 self-start sm:self-center px-4 py-2.5 border rounded-2xl text-xs font-black uppercase tracking-wide ${planBadge.wrap}`}
+               >
+                 <Star size={14} className={planBadge.star} />
+                 {planBadge.label}
                </div>
-             )}
+             ) : null}
           </div>
 
           {user.isSubscribed && user.adminApprovalStatus === 'pending' && (
@@ -372,7 +288,11 @@ const UserDashboardView = ({ logout, user }) => {
                    <div className="flex flex-wrap gap-4">
                       <button 
                         onClick={() => {
-                          if (user.isSubscribed && user.adminApprovalStatus !== 'approved') {
+                          if (!hasActiveSubscription(user)) {
+                            navigate('/pricing');
+                            return;
+                          }
+                          if (user.adminApprovalStatus !== 'approved') {
                             alert("Your account is currently under review by our admin team. You cannot create new campaigns until approved.");
                             return;
                           }
@@ -382,20 +302,28 @@ const UserDashboardView = ({ logout, user }) => {
                       >
                          Create New Campaign <ArrowRight size={18} />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            canAccessPremiumFeatures(user)
+                              ? '/dashboard/coach'
+                              : '/pricing'
+                          )
+                        }
+                        className="px-10 py-5 bg-white border border-gray-200 text-gray-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:border-yellow-400 transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                         <Sparkles size={18} className="text-yellow-500" /> Business Coach
+                         {!hasActiveSubscription(user) ? (
+                           <span className="text-[10px] font-black uppercase tracking-widest text-yellow-600">Pro</span>
+                         ) : null}
+                      </button>
                       {!user.isSubscribed && (
                         <button 
                           onClick={() => navigate('/pricing')}
                           className="px-10 py-5 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 cursor-pointer"
                         >
                            Upgrade Plan
-                        </button>
-                      )}
-                      {user.isSubscribed && (
-                        <button 
-                          onClick={() => navigate('/dashboard/profile')}
-                          className="px-10 py-5 bg-indigo-600 hover:bg-indigo-750 text-white rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center gap-2 cursor-pointer shadow-lg"
-                        >
-                           View Subscription <Star size={16} />
                         </button>
                       )}
                    </div>
@@ -559,14 +487,33 @@ const UserDashboardView = ({ logout, user }) => {
 
                              <div className="flex items-center gap-2 justify-end">
                                {campaign.status === "active" && (
-                                 <button
-                                   id={`promoteCampaign-${campaign._id}`}
-                                   onClick={() => navigate(`/dashboard/campaign/${campaign._id}/promote`)}
-                                   className="px-4 py-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 hover:text-indigo-700 transition-all active:scale-95 flex items-center gap-2 font-black text-[10px] uppercase tracking-wider cursor-pointer"
-                                   title="Promote with Ads"
-                                 >
-                                   <Rocket size={16} /> Promote
-                                 </button>
+                                 <>
+                                   <button
+                                     id={`promoteCampaign-${campaign._id}`}
+                                     onClick={() => navigate(`/dashboard/campaign/${campaign._id}/promote`)}
+                                     className="px-4 py-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 hover:text-indigo-700 transition-all active:scale-95 flex items-center gap-2 font-black text-[10px] uppercase tracking-wider cursor-pointer"
+                                     title="Promote with Ads"
+                                   >
+                                     <Rocket size={16} /> Promote
+                                   </button>
+                                   <button
+                                     type="button"
+                                     onClick={() =>
+                                       navigate(
+                                         canAccessPremiumFeatures(user)
+                                           ? '/dashboard/coach'
+                                           : '/pricing',
+                                         canAccessPremiumFeatures(user)
+                                           ? { state: { campaignId: campaign._id } }
+                                           : undefined
+                                       )
+                                     }
+                                     className="flex items-center gap-2 px-4 py-2 bg-white border border-yellow-200 text-yellow-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-yellow-50 transition-all"
+                                     title="Open Business Coach with this campaign"
+                                   >
+                                     <Sparkles size={16} /> Coach
+                                   </button>
+                                 </>
                                )}
                                <button
                                  id={`deleteCampaign-${campaign._id}`}
@@ -632,164 +579,6 @@ const UserDashboardView = ({ logout, user }) => {
              </div>
 
              <div className="space-y-8">
-                {/* Google Ads Integration Card */}
-                <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
-                   <h3 className="text-xl font-black text-gray-900 flex items-center gap-3 uppercase tracking-tight">
-                      <Megaphone className="text-indigo-600" size={20} /> Google Ads Integration
-                   </h3>
-                   
-                   {user.googleAdAccountId ? (
-                     <div className="space-y-4">
-                       <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase tracking-widest">
-                          <CheckCircle2 size={16} /> Google Ads Linked
-                       </div>
-                       <p className="text-gray-400 font-bold text-xs leading-relaxed">
-                          Your workspace is linked to Google Ad Account:
-                       </p>
-                       <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 font-mono text-xs text-gray-600 truncate">
-                          ID: {user.googleAdAccountId.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}
-                       </div>
-                       <button
-                         onClick={handleConnectGoogleAds}
-                         className="w-full py-3 bg-gray-900 text-white hover:bg-black rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                       >
-                          Switch Account
-                       </button>
-                     </div>
-                   ) : user.googleRefreshToken ? (
-                     <div className="space-y-4">
-                       <p className="text-gray-400 font-bold text-xs leading-relaxed">
-                          OAuth authenticated. Select which Customer ID to use for running search ads:
-                       </p>
-                       {loadingAccounts ? (
-                         <div className="text-center py-2 text-xs font-bold text-gray-400">Loading your ad accounts...</div>
-                       ) : googleAccounts.length > 0 ? (
-                         <div className="space-y-4">
-                           <select
-                             value={selectedAccount}
-                             onChange={(e) => setSelectedAccount(e.target.value)}
-                             className="w-full px-4 py-3 border border-gray-200 rounded-xl font-bold text-sm focus:border-yellow-500 focus:outline-none"
-                           >
-                             {googleAccounts.map((acc) => (
-                               <option key={acc} value={acc}>
-                                 {acc.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}
-                               </option>
-                             ))}
-                           </select>
-                           <button
-                             onClick={handleLinkGoogleAccount}
-                             className="w-full py-3 bg-yellow-500 text-black hover:bg-yellow-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                           >
-                              Confirm Link Account
-                           </button>
-                         </div>
-                       ) : (
-                         <div className="space-y-4">
-                           <p className="text-red-500 text-xs font-bold">No active Google Ads accounts found. Make sure billing is setup in your Google Ads account.</p>
-                           <button
-                             onClick={handleConnectGoogleAds}
-                             className="w-full py-3 bg-gray-900 text-white hover:bg-black rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                           >
-                              Retry Connection
-                           </button>
-                         </div>
-                       )}
-                       {adMsg && <p className="text-green-600 text-xs font-bold text-center mt-2">{adMsg}</p>}
-                     </div>
-                   ) : (
-                     <div className="space-y-4">
-                       <p className="text-gray-400 font-bold text-xs leading-relaxed">
-                          Link your Google Ads account to launch search campaigns directly targeting your published landing pages.
-                       </p>
-                       <button
-                         onClick={handleConnectGoogleAds}
-                         className="w-full py-3 bg-indigo-600 text-white hover:bg-indigo-750 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                       >
-                          Connect Google Ads
-                       </button>
-                     </div>
-                   )}
-                </div>
-
-                {/* Meta Ads Integration Card */}
-                <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
-                   <h3 className="text-xl font-black text-gray-900 flex items-center gap-3 uppercase tracking-tight">
-                      <Megaphone className="text-indigo-600" size={20} /> Meta Ads Integration
-                   </h3>
-                   
-                   {user.metaAdAccountId ? (
-                     <div className="space-y-4">
-                       <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase tracking-widest">
-                          <CheckCircle2 size={16} /> Meta Ads Linked
-                       </div>
-                       <p className="text-gray-400 font-bold text-xs leading-relaxed">
-                          Your workspace is linked to Meta Ad Account:
-                       </p>
-                       <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 font-mono text-xs text-gray-600 truncate">
-                          ID: {user.metaAdAccountId}
-                       </div>
-                       <button
-                         onClick={handleConnectMetaAds}
-                         className="w-full py-3 bg-gray-900 text-white hover:bg-black rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                       >
-                          Switch Account
-                       </button>
-                     </div>
-                   ) : user.metaAccessToken ? (
-                     <div className="space-y-4">
-                       <p className="text-gray-400 font-bold text-xs leading-relaxed">
-                          OAuth authenticated. Select which Meta Ad Account to use:
-                       </p>
-                       {loadingMetaAccounts ? (
-                         <div className="text-center py-2 text-xs font-bold text-gray-400">Loading your ad accounts...</div>
-                       ) : metaAccounts.length > 0 ? (
-                         <div className="space-y-4">
-                           <select
-                             value={selectedMetaAccount}
-                             onChange={(e) => setSelectedMetaAccount(e.target.value)}
-                             className="w-full px-4 py-3 border border-gray-200 rounded-xl font-bold text-sm focus:border-yellow-500 focus:outline-none"
-                           >
-                             {metaAccounts.map((acc) => (
-                               <option key={acc.id} value={acc.id}>
-                                 {acc.name} ({acc.id})
-                               </option>
-                             ))}
-                           </select>
-                           <button
-                             onClick={handleLinkMetaAccount}
-                             className="w-full py-3 bg-yellow-500 text-black hover:bg-yellow-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                           >
-                              Confirm Link Account
-                           </button>
-                         </div>
-                       ) : (
-                         <div className="space-y-4">
-                           <p className="text-red-500 text-xs font-bold">No active Meta Ad accounts found. Make sure billing is setup in your Meta Ads Manager.</p>
-                           <button
-                             onClick={handleConnectMetaAds}
-                             className="w-full py-3 bg-gray-900 text-white hover:bg-black rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                           >
-                              Retry Connection
-                           </button>
-                         </div>
-                       )}
-                       {metaMsg && <p className="text-green-600 text-xs font-bold text-center mt-2">{metaMsg}</p>}
-                     </div>
-                   ) : (
-                     <div className="space-y-4">
-                       <p className="text-gray-400 font-bold text-xs leading-relaxed">
-                          Link your Meta Ads account to launch Facebook/Instagram campaigns directly targeting your published landing pages.
-                       </p>
-                       <button
-                         onClick={handleConnectMetaAds}
-                         className="w-full py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                       >
-                          Connect Meta Ads
-                       </button>
-                     </div>
-                   )}
-                </div>
-
                 {/* Statistics Card (Horizontal Content layout) */}
                 <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                    <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3 uppercase tracking-tight">

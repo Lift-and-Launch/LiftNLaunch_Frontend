@@ -62,29 +62,31 @@ const LeftPanel: React.FC = () => {
       content: elementConfig.defaultContent,
       styles: elementConfig.defaultStyles,
       children:
-        elementConfig.type === "grid" || elementConfig.type === "columns"
-          ? [
-              {
-                id: uuidv4(),
-                type: "text",
-                content: "<p>Column 1</p>",
-                styles: {
-                  padding: "16px",
-                  backgroundColor: "#e5e7eb",
-                  borderRadius: "4px",
-                },
+        elementConfig.type === "grid"
+          ? [1, 2, 3].map((n) => ({
+              id: uuidv4(),
+              type: "text",
+              content: `<p>Grid Cell ${n}</p>`,
+              styles: {
+                padding: "16px",
+                backgroundColor: "#e5e7eb",
+                borderRadius: "4px",
+                minHeight: "80px",
               },
-              {
-                id: uuidv4(),
-                type: "text",
-                content: "<p>Column 2</p>",
-                styles: {
-                  padding: "16px",
-                  backgroundColor: "#e5e7eb",
-                  borderRadius: "4px",
-                },
+            }))
+          : elementConfig.type === "columns"
+          ? [1, 2].map((n) => ({
+              id: uuidv4(),
+              type: "text",
+              content: `<p>Column ${n}</p>`,
+              styles: {
+                padding: "20px",
+                backgroundColor: "#f3f4f6",
+                borderRadius: "8px",
+                flex: "1",
+                minHeight: "120px",
               },
-            ]
+            }))
           : elementConfig.type === "slider"
             ? [
                 {

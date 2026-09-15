@@ -5,17 +5,26 @@ import { Check, ShieldCheck, ArrowRight, Sparkles } from "lucide-react";
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
-  const { subscribe, user } = useAuth();
+  const { subscribe, refreshUser } = useAuth();
   const [animate, setAnimate] = useState(false);
   const [showModal, setShowModal] = useState(true);
 
   useEffect(() => {
-    // Instantly sync local state
-    subscribe();
-    
-    // Trigger entrance animation
+    let cancelled = false;
+    (async () => {
+      // Prefer Stripe-verified activate; if webhook already ran, refresh from /auth/me.
+      const activated = await subscribe();
+      if (!activated && !cancelled) {
+        await refreshUser();
+      }
+    })();
+
     const timer = setTimeout(() => setAnimate(true), 100);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
