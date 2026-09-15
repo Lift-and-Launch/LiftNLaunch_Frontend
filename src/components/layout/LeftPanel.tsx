@@ -56,6 +56,11 @@ const LeftPanel: React.FC = () => {
   };
 
   const handleAddElement = (elementConfig: any) => {
+    const columnCount =
+      elementConfig.defaultStyles?.gridColumns ||
+      (elementConfig.type === "grid" ? 3 : 2);
+    const cellLabel = elementConfig.type === "grid" ? "Cell" : "Column";
+
     const newElement: WebsiteElement = {
       id: uuidv4(),
       type: elementConfig.type,
@@ -63,28 +68,17 @@ const LeftPanel: React.FC = () => {
       styles: elementConfig.defaultStyles,
       children:
         elementConfig.type === "grid" || elementConfig.type === "columns"
-          ? [
-              {
-                id: uuidv4(),
-                type: "text",
-                content: "<p>Column 1</p>",
-                styles: {
-                  padding: "16px",
-                  backgroundColor: "#e5e7eb",
-                  borderRadius: "4px",
-                },
+          ? Array.from({ length: columnCount }, (_, i) => ({
+              id: uuidv4(),
+              type: "text" as const,
+              content: `<p>${cellLabel} ${i + 1}</p>`,
+              styles: {
+                padding: "16px",
+                backgroundColor: "#e5e7eb",
+                borderRadius: "4px",
+                minHeight: elementConfig.type === "grid" ? "80px" : "120px",
               },
-              {
-                id: uuidv4(),
-                type: "text",
-                content: "<p>Column 2</p>",
-                styles: {
-                  padding: "16px",
-                  backgroundColor: "#e5e7eb",
-                  borderRadius: "4px",
-                },
-              },
-            ]
+            }))
           : elementConfig.type === "slider"
             ? [
                 {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
+import { useParams, Link } from "react-router-dom";
 import CanvasElement from "../components/canvas/CanvasElement";
+import api from "../api/axios";
 
 export default function LiveWebsite() {
   const { campaignId, version } = useParams();
@@ -11,26 +11,42 @@ export default function LiveWebsite() {
 
   useEffect(() => {
     const fetchWebsite = async () => {
+      if (!campaignId) {
+        setError("Missing campaign id.");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
       try {
-        const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-        const versionParam = version ? `?v=${version.toUpperCase()}` : "";
-        const response = await axios.get(`${baseURL}/websites/public/${campaignId}${versionParam}`);
+        // Builder always saves version A/B — default to A for plain /live/:id links
+        const v = (version || "A").toUpperCase();
+        const response = await api.get(`/websites/public/${campaignId}`, {
+          params: { v },
+        });
+
         if (response.data.success && response.data.data) {
           setWebsiteData(response.data.data);
         } else {
-          setError("Website not found");
+          setError(response.data?.message || "Website not found");
         }
       } catch (err) {
         console.error("Failed to load live website:", err);
-        setError(err.response?.data?.message || "Failed to load website details.");
+        const status = err.response?.status;
+        const message =
+          err.response?.data?.message ||
+          (status === 404
+            ? "This landing page is not published yet, or no website content was saved for this campaign."
+            : "Failed to load website details.");
+        setError(message);
       } finally {
         setLoading(false);
       }
     };
 
-    if (campaignId) {
-      fetchWebsite();
-    }
+    fetchWebsite();
   }, [campaignId, version]);
 
   if (loading) {
@@ -49,15 +65,23 @@ export default function LiveWebsite() {
           !
         </div>
         <h1 className="text-2xl font-black text-gray-900 mb-2">Could Not Load Website</h1>
-        <p className="text-gray-500 font-bold text-sm max-w-sm mb-6">
+        <p className="text-gray-500 font-bold text-sm max-w-md mb-6 leading-relaxed">
           {error || "The requested website could not be found or is no longer active."}
         </p>
-        <a
-          href="/"
-          className="px-6 py-3 bg-gray-900 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-gray-800 transition-all"
-        >
-          Go Back Home
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link
+            to="/"
+            className="px-6 py-3 bg-gray-900 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-gray-800 transition-all cursor-pointer"
+          >
+            Go Back Home
+          </Link>
+          <Link
+            to="/dashboard"
+            className="px-6 py-3 bg-yellow-400 text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-yellow-500 transition-all cursor-pointer"
+          >
+            Open Dashboard
+          </Link>
+        </div>
       </div>
     );
   }
@@ -81,13 +105,17 @@ export default function LiveWebsite() {
           </div>
         ) : (
           elements.map((element) => {
-            const paymentOptionActive = websiteData.campaignId && typeof websiteData.campaignId === "object"
-              ? websiteData.campaignId.paymentOptionActive
-              : websiteData.paymentOptionActive;
+            const paymentOptionActive =
+              websiteData.campaignId && typeof websiteData.campaignId === "object"
+                ? websiteData.campaignId.paymentOptionActive
+                : websiteData.paymentOptionActive;
 
-            const isStripeConnected = websiteData.campaignId && typeof websiteData.campaignId === "object" && websiteData.campaignId.user
-              ? !!websiteData.campaignId.user.stripeAccountId
-              : false;
+            const isStripeConnected =
+              websiteData.campaignId &&
+              typeof websiteData.campaignId === "object" &&
+              websiteData.campaignId.user
+                ? !!websiteData.campaignId.user.stripeAccountId
+                : false;
 
             return (
               <CanvasElement

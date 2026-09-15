@@ -2,6 +2,53 @@ import api from './axios';
 
 const unwrap = (response) => response.data;
 
+function normalizeElementContent(content) {
+  if (content == null) return '';
+  if (typeof content === 'string') return content;
+  if (typeof content === 'number' || typeof content === 'boolean') return String(content);
+  if (typeof content === 'object') {
+    if (typeof content.content === 'string') return content.content;
+    if (typeof content.text === 'string') return content.text;
+    try {
+      return JSON.stringify(content);
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
+/** Ensure AI / partial website elements are builder-safe. */
+export function normalizeWebsiteElements(elements = []) {
+  if (!Array.isArray(elements)) return [];
+
+  return elements
+    .filter((el) => el && typeof el === 'object')
+    .map((el, index) => {
+      const id =
+        typeof el.id === 'string' && el.id.trim()
+          ? el.id
+          : `ai-block-${Date.now()}-${index}`;
+      const type = typeof el.type === 'string' && el.type.trim() ? el.type : 'text';
+      const styles =
+        el.styles && typeof el.styles === 'object' && !Array.isArray(el.styles)
+          ? el.styles
+          : {};
+      const children = Array.isArray(el.children)
+        ? normalizeWebsiteElements(el.children)
+        : undefined;
+
+      return {
+        ...el,
+        id,
+        type,
+        content: normalizeElementContent(el.content),
+        styles,
+        ...(children ? { children } : {}),
+      };
+    });
+}
+
 export const campaignAiApi = {
   getCompletion: (campaignId) =>
     api.get(`/campaigns/${campaignId}/ai/completion`).then(unwrap),
@@ -56,10 +103,11 @@ export const campaignAiApi = {
   applyLandingDraft: async (campaignId, elements, version = 'A') => {
     const current = await api.get(`/websites/${campaignId}?v=${version}`);
     const website = current.data?.data || {};
+    const normalizedElements = normalizeWebsiteElements(elements);
     const payload = {
       ...website,
       campaignId,
-      elements,
+      elements: normalizedElements,
       updatedAt: new Date().toISOString(),
     };
     return api.put(`/websites/${campaignId}?v=${version}`, payload).then(unwrap);

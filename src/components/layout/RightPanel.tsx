@@ -71,6 +71,11 @@ const RightPanel: React.FC = () => {
     ? findElementRecursive(currentWebsite.elements, selectedElement) 
     : null;
 
+  // AI / partial elements may omit styles
+  if (selectedElementData && (!selectedElementData.styles || typeof selectedElementData.styles !== "object")) {
+    selectedElementData.styles = {};
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1213,11 +1218,18 @@ const RightPanel: React.FC = () => {
               type="number"
               min="1"
               max="6"
-              value={selectedElementData.styles.gridColumns || 2}
+              value={
+                selectedElementData.styles.gridColumns ||
+                (selectedElementData.type === "grid" ? 3 : 2)
+              }
               onChange={(e) => {
-                const count = parseInt(e.target.value) || 2;
+                const fallback =
+                  selectedElementData.type === "grid" ? 3 : 2;
+                const count = parseInt(e.target.value) || fallback;
                 handleStyleChange("gridColumns", count);
-                
+                const cellLabel =
+                  selectedElementData.type === "grid" ? "Cell" : "Column";
+
                 // Also adjust children if needed
                 const currentChildren = selectedElementData.children || [];
                 if (currentChildren.length < count) {
@@ -1226,7 +1238,7 @@ const RightPanel: React.FC = () => {
                     newChildren.push({
                       id: crypto.randomUUID(),
                       type: "text",
-                      content: `<p>Column ${i + 1}</p>`,
+                      content: `<p>${cellLabel} ${i + 1}</p>`,
                       styles: { padding: "16px", backgroundColor: "#e5e7eb", borderRadius: "4px" }
                     });
                   }

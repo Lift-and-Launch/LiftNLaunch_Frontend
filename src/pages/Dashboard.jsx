@@ -501,7 +501,9 @@ const UserDashboardView = ({ logout, user }) => {
                              </div>
 
                              {/* Website link preview box */}
-                             {campaign.status === "active" && (
+                             {["active", "published", "live"].includes(
+                               String(campaign.status || "").toLowerCase()
+                             ) ? (
                                <div className="p-4 bg-slate-50 rounded-2xl border border-gray-100 space-y-2">
                                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider block">Live Destination Link</span>
                                  {campaign.abTestingEnabled ? (
@@ -524,15 +526,27 @@ const UserDashboardView = ({ logout, user }) => {
                                      </a>
                                    </div>
                                  ) : (
-                                   <a
-                                     href={`${window.location.origin}/live/${campaign._id}`}
-                                     target="_blank"
-                                     rel="noopener noreferrer"
-                                     className="inline-flex px-3 py-1.5 bg-white border border-gray-150 rounded-xl text-[10px] font-black text-yellow-600 hover:text-yellow-700 transition-colors uppercase tracking-wide items-center gap-1 shadow-sm cursor-pointer"
-                                   >
-                                     🌐 Live Website
-                                   </a>
+                                   <div className="space-y-2">
+                                     <a
+                                       href={`${window.location.origin}/live/${campaign._id}`}
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       className="inline-flex px-3 py-1.5 bg-white border border-gray-150 rounded-xl text-[10px] font-black text-yellow-600 hover:text-yellow-700 transition-colors uppercase tracking-wide items-center gap-1 shadow-sm cursor-pointer"
+                                     >
+                                       🌐 Live Website
+                                     </a>
+                                     <p className="text-[10px] font-medium text-gray-400 break-all">
+                                       {`${window.location.origin}/live/${campaign._id}`}
+                                     </p>
+                                   </div>
                                  )}
+                               </div>
+                             ) : (
+                               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 space-y-1">
+                                 <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider block">Landing page not live yet</span>
+                                 <p className="text-[11px] font-medium text-amber-800/80 leading-relaxed">
+                                   Design your page in the website builder, then click <span className="font-black">Publish</span> to activate the live link here.
+                                 </p>
                                </div>
                              )}
                            </div>
@@ -573,7 +587,9 @@ const UserDashboardView = ({ logout, user }) => {
                                >
                                  <Sparkles size={16} /> AI
                                </button>
-                               {campaign.status === "active" && (
+                               {["active", "published", "live"].includes(
+                                 String(campaign.status || "").toLowerCase()
+                               ) && (
                                  <button
                                    id={`promoteCampaign-${campaign._id}`}
                                    onClick={() => navigate(`/dashboard/campaign/${campaign._id}/promote`)}
