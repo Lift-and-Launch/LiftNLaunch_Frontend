@@ -20,6 +20,8 @@ const SignIn = React.lazy(() => import("./pages/SignIn"));
 const SignUp = React.lazy(() => import("./pages/SignUp"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 const Process = React.lazy(() => import("./pages/Process"));
+const Agency = React.lazy(() => import("./pages/Agency"));
+const ConsultationIntake = React.lazy(() => import("./pages/ConsultationIntake"));
 const Pricing = React.lazy(() => import("./pages/Pricing"));
 const PaymentSuccess = React.lazy(() => import("./pages/PaymentSuccess"));
 const ActivateFunnel = React.lazy(
@@ -186,6 +188,22 @@ const AppRoutes = () => {
           element={
             <MainLayout>
               <Process />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/agency"
+          element={
+            <MainLayout>
+              <Agency />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/consultation-intake"
+          element={
+            <MainLayout>
+              <ConsultationIntake />
             </MainLayout>
           }
         />

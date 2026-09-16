@@ -85,7 +85,7 @@ export default function SuccessStories() {
                 </p>
                 {index === 1 && (
                   <Link
-                    to="/contact"
+                    to="/agency?consult=1"
                     className="inline-block mt-8 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-8 rounded-full"
                   >
                     Chat With a Crowdfunding Expert

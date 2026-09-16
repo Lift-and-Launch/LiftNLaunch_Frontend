@@ -117,7 +117,7 @@ export default function HowItWorks() {
 
         <div className="mt-12 text-center">
           <Link
-            to="/contact"
+            to="/agency?consult=1"
             className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-8 rounded-full"
           >
             Chat With a Crowdfunding Expert

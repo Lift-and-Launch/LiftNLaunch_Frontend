@@ -124,7 +124,7 @@ export default function Services() {
           most out of every dollar you spend.
         </p>
         <Link
-          to="/contact"
+          to="/signup"
           className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-8 py-3 rounded-full"
         >
           Get the Right Tools for Your Launch
@@ -169,7 +169,7 @@ export default function Services() {
                 ))}
               </div>
               <Link
-                to="/contact"
+                to="/signup"
                 className="inline-block bg-yellow-400 text-black text-sm px-6 py-2 rounded-full hover:bg-yellow-500 transition font-semibold"
               >
                 {feature.cta}
@@ -199,10 +199,10 @@ export default function Services() {
               faster — whatever kind of campaign you&apos;re running.
             </p>
             <Link
-              to="/contact"
+              to="/signup"
               className="inline-block bg-black text-white px-12 py-2 rounded-full hover:bg-black/90 transition-all duration-300 text-center mt-6"
             >
-              Book a Free Strategy Call
+              Get Started with LaunchVault
             </Link>
           </div>
         </div>

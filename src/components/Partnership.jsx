@@ -44,7 +44,7 @@ export default function Partnership() {
 
         <div className="mt-8 text-center">
           <Link
-            to="/contact"
+            to="/agency?consult=1"
             className="inline-block px-12 py-3 bg-yellow-400 text-gray-900 hover:bg-yellow-400/90 uppercase font-semibold rounded-full transition duration-300"
           >
             Chat With a Crowdfunding Expert

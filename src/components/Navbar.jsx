@@ -65,7 +65,7 @@ export default function Navbar() {
                 : 'opacity-0 pointer-events-none'
                 }`}
             >
-              <Link to="/process" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Our Process</Link>
+              <Link to="/agency" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Agency</Link>
               <Link to="/faq" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">FAQ</Link>
               <Link to="/blog" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Blogs</Link>
             </div>
@@ -173,7 +173,7 @@ export default function Navbar() {
           <Link to="/campaigns" className="block" role="menuitem">Campaigns</Link>
           <Link to="/services" className="block" role="menuitem">LaunchVault</Link>
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 pt-1">About Us</p>
-          <Link to="/process" className="block pl-3" role="menuitem">Our Process</Link>
+          <Link to="/agency" className="block pl-3" role="menuitem">Agency</Link>
           <Link to="/faq" className="block pl-3" role="menuitem">FAQ</Link>
           <Link to="/blog" className="block pl-3" role="menuitem">Blogs</Link>
           <Link to="/contact" className="block" role="menuitem">Contact Us</Link>

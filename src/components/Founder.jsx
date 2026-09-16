@@ -41,7 +41,7 @@ export default function Founder() {
             Let&apos;s build something great — together.
           </p>
           <Link
-            to="/contact"
+            to="/agency?consult=1"
             className="inline-block px-8 py-3 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded-full transition"
           >
             Chat With a Crowdfunding Expert
@@ -71,7 +71,7 @@ export default function Founder() {
           </li>
         </ul>
         <Link
-          to="/contact"
+          to="/agency?consult=1"
           className="inline-block px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full transition"
         >
           Book a Free Strategy Call &amp; Take the First Step Toward Funding

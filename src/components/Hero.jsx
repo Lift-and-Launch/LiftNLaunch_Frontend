@@ -88,16 +88,16 @@ export default function Hero() {
           </p>
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
             <Link
-              to="/contact"
+              to="/agency?consult=1"
               className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 px-6 rounded-full text-sm text-center"
             >
               Chat With a Crowdfunding Expert
             </Link>
             <Link
-              to="/process"
+              to="/services"
               className="inline-block border border-gray-300 hover:border-gray-900 text-gray-900 font-medium py-3 px-6 rounded-full text-sm text-center"
             >
-              See Our Process
+              Explore the Platform
             </Link>
           </div>
         </div>

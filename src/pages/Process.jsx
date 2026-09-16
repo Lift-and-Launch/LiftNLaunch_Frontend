@@ -131,7 +131,7 @@ const Process = () => {
           Move.
         </p>
         <Link
-          to="/contact"
+          to="/agency?consult=1"
           className="inline-block bg-yellow-400 text-gray-900 px-10 py-4 rounded-full font-bold hover:bg-yellow-500 transition-all shadow-lg"
         >
           Chat With a Crowdfunding Expert
