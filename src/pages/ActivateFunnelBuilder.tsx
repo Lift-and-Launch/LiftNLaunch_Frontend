@@ -1,136 +1,55 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from '../api/axios';
+import { useNavigate, useLocation } from "react-router-dom";
+import { goToPricing } from "../utils/pricingNavigation";
 
-const funnelImage = "/pricing/funnel.png"; // replace with your actual image path
+const funnelImage = "/pricing/funnel.png";
 
-const plans = [
-  { id: "bronze", name: "Basic Plan", price: "$1500", period: "One-Time" },
-  { id: "silver", name: "Premium Plan", price: "$499.99", period: "Month" },
-  {
-    id: "gold",
-    name: "Enterprise Plan",
-    price: "$999.99",
-    period: "Month",
-  },
-];
-
+/**
+ * Activation entry point — self-serve checkout lives on /pricing
+ * (Starter / Growth / Pro Elite via Stripe Checkout).
+ */
 export default function ActivateFunnelBuilder() {
-  const [selected, setSelected] = useState("premium");
   const navigate = useNavigate();
-
-  const handleActivate = async () => {
-    try {
-      const response = await api.post(
-        "/subscription/create-checkout-session",
-        {
-          plan: selected,
-        }
-      );
-
-      if (response.data.success) {
-        window.location.href = response.data.url;
-      }
-    } catch (error) {
-      console.error("Subscription Error:", error);
-      // Optional fallback
-      navigate("/dashboard/campaign/select-type");
-    }
-  };
+  const location = useLocation();
 
   return (
-    <section className="w-full bg-white px-6 md:px-12 lg:px-20 py-12 md:py-16">
+    <section className="w-full bg-white px-6 md:px-12 lg:px-20 py-12 md:py-16 border-b-2 border-amber-200">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-10 md:gap-6">
-        {/* LEFT — 2/3 */}
         <div className="w-full md:w-2/3 flex flex-col gap-6">
-          {/* Tag */}
           <div>
             <span className="inline-block border border-gray-300 text-gray-500 text-xs font-medium px-3 py-1 rounded-full">
               Activation
             </span>
           </div>
 
-          {/* Heading & Subtext */}
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
               Activate Funnel Builder
             </h2>
-            <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
-              Choose a plan to unlock campaigns, enquiries, and real market
-              testing for your business.
+            <p className="text-gray-500 text-sm leading-relaxed max-w-md">
+              Choose Starter, Growth, or Pro Elite to unlock campaigns, visits,
+              A/B testing (Growth+), and Business Coach — billed monthly via Stripe.
             </p>
           </div>
 
-          {/* Plan Options */}
-          <div className="flex flex-col gap-3">
-            {plans.map((plan) => {
-              const isSelected = selected === plan.id;
-              return (
-                <button
-                  key={plan.id}
-                  onClick={() => setSelected(plan.id)}
-                  className={`
-                    w-full flex items-center justify-between px-5 py-4 rounded-xl border-2
-                    transition-all duration-200 cursor-pointer text-left
-                    ${
-                      isSelected
-                        ? "border-[#c9a030] bg-white shadow-sm"
-                        : "border-gray-200 bg-white hover:border-gray-300"
-                    }
-                  `}
-                >
-                  {/* Radio + Name */}
-                  <div className="flex items-center gap-3">
-                    {/* Custom radio */}
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
-                        isSelected ? "border-[#c9a030]" : "border-gray-300"
-                      }`}
-                    >
-                      {isSelected && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#c9a030]" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-sm font-semibold ${
-                        isSelected ? "text-gray-900" : "text-gray-600"
-                      }`}
-                    >
-                      {plan.name}
-                    </span>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-baseline gap-1">
-                    <span
-                      className={`font-bold text-base ${
-                        isSelected ? "text-gray-900" : "text-gray-600"
-                      }`}
-                    >
-                      {plan.price}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      /{plan.period}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* CTA Button */}
-          <div>
+          <div className="flex flex-wrap gap-3">
             <button
-              onClick={handleActivate}
-              className="bg-[#c9a030] hover:bg-[#b08820] text-white text-sm font-semibold px-7 py-3 rounded-full transition-colors duration-200 cursor-pointer"
+              type="button"
+              onClick={() => goToPricing(navigate, location)}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black text-sm font-semibold px-7 py-3 rounded-full transition-colors duration-200 cursor-pointer"
             >
-              Activate Your Plan
+              View Plans &amp; Checkout
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="border border-gray-300 hover:border-gray-900 text-gray-900 text-sm font-medium px-7 py-3 rounded-full transition-colors duration-200 cursor-pointer"
+            >
+              Back to Dashboard
             </button>
           </div>
 
-          {/* Trust badges */}
           <div className="flex flex-wrap items-center gap-5 mt-1">
-            {["Transparent pricing", "No hidden charges", "Cancel anytime"].map(
+            {["Transparent pricing", "1.5% Connect fee", "Cancel anytime"].map(
               (item) => (
                 <div
                   key={item}
@@ -154,7 +73,6 @@ export default function ActivateFunnelBuilder() {
           </div>
         </div>
 
-        {/* RIGHT — 1/3 */}
         <div className="w-full md:w-1/3 flex items-center justify-center">
           <img
             src={funnelImage}

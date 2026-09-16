@@ -1,5 +1,5 @@
 // src/components/canvas/Canvas.tsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useWebsiteStore } from "../../store/websiteStore";
 import { useDroppable } from "@dnd-kit/core";
 import {
@@ -8,7 +8,12 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableCanvasItem } from "./SortableCanvasItem";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Plus } from "lucide-react";
+import toast from "react-hot-toast";
+import { fetchEntitlements, handlePlanGateError } from "../../utils/entitlements";
+import { canUseAbTesting } from "../../utils/plans";
+import { goToPricing } from "../../utils/pricingNavigation";
 
 const Canvas: React.FC = () => {
   const {
@@ -22,6 +27,24 @@ const Canvas: React.FC = () => {
     setActiveVersion,
   } = useWebsiteStore();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [abAllowed, setAbAllowed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchEntitlements();
+        if (!cancelled) setAbAllowed(canUseAbTesting(data));
+      } catch {
+        if (!cancelled) setAbAllowed(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?._id || user?.id]);
 
   const { setNodeRef } = useDroppable({
     id: "canvas-droppable",
@@ -72,6 +95,13 @@ const Canvas: React.FC = () => {
 
   const handleToggleABTesting = async () => {
     if (!currentWebsite) return;
+
+    if (!abAllowed) {
+      toast.error("A/B testing requires Growth or Pro Elite. Upgrade to unlock.");
+      goToPricing(navigate, location);
+      return;
+    }
+
     const cid = currentWebsite.campaignId && typeof currentWebsite.campaignId === "object"
       ? currentWebsite.campaignId._id || currentWebsite.campaignId.id
       : currentWebsite.campaignId;
@@ -88,7 +118,6 @@ const Canvas: React.FC = () => {
         abTestingEnabled: newEnabled
       });
       if (res.data.success) {
-        // Update local state by modifying currentWebsite campaign details
         const updatedWebsite = {
           ...currentWebsite,
           campaignId: {
@@ -98,14 +127,15 @@ const Canvas: React.FC = () => {
         };
         useWebsiteStore.setState({ currentWebsite: updatedWebsite });
         
-        // If disabling A/B testing, revert activeVersion to A
         if (!newEnabled && useWebsiteStore.getState().activeVersion !== "A") {
           await useWebsiteStore.getState().setActiveVersion("A");
         }
       }
     } catch (err) {
       console.error("Failed to toggle A/B testing:", err);
-      alert("Failed to update A/B testing settings.");
+      if (!handlePlanGateError(err, { navigate, location })) {
+        toast.error("Failed to update A/B testing settings.");
+      }
     }
   };
 
@@ -137,19 +167,32 @@ const Canvas: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                 Status: {currentWebsite.campaignId?.abTestingEnabled ? "Enabled" : "Disabled"}
               </span>
-              <button
-                type="button"
-                onClick={handleToggleABTesting}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  currentWebsite.campaignId?.abTestingEnabled ? 'bg-yellow-500' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    currentWebsite.campaignId?.abTestingEnabled ? 'translate-x-5' : 'translate-x-0'
+              {abAllowed ? (
+                <button
+                  type="button"
+                  onClick={handleToggleABTesting}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    currentWebsite.campaignId?.abTestingEnabled ? 'bg-yellow-500' : 'bg-gray-200'
                   }`}
-                />
-              </button>
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      currentWebsite.campaignId?.abTestingEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    toast.error("A/B testing requires Growth or Pro Elite.");
+                    goToPricing(navigate, location);
+                  }}
+                  className="text-[10px] font-black uppercase tracking-widest text-yellow-700 hover:text-yellow-800 underline"
+                >
+                  Upgrade for A/B
+                </button>
+              )}
             </div>
 
             {/* Version Switcher Tabs */}

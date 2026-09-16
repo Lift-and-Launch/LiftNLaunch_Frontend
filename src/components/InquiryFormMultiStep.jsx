@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Interest, NextStep, Readiness } from "../types";
+import api from "../api/axios";
 
 const interestLabels = {
     [Interest.CROWDFUNDING_SUPPORT]: "Crowdfunding Campaign Support",
@@ -69,6 +70,24 @@ export default function InquiryFormMultiStep() {
     const goNext = () => setPhase((p) => (p < 5 ? p + 1 : p));
     const goBack = () => setPhase((p) => (p > 1 ? p - 1 : p));
 
+    const resetForm = () => {
+        setPhase(1);
+        setForm({
+            fullName: "",
+            email: "",
+            phone: "",
+            businessName: "",
+            address: "",
+            interests: [],
+            otherInterest: "",
+            goal: "",
+            readiness: Readiness.EXPLORING,
+            nextStep: NextStep.SEND_INFO,
+        });
+        setCity("");
+        setStateProv("");
+    };
+
     const onSubmit = async (e) => {
         e.preventDefault();
         if (!phaseValid || phase !== 5) return;
@@ -76,11 +95,34 @@ export default function InquiryFormMultiStep() {
         setStatus("submitting");
         setMsg("");
 
-        // Mock success for static version
-        setTimeout(() => {
+        try {
+            const payload = {
+                fullName: form.fullName.trim(),
+                email: form.email.trim(),
+                phone: form.phone.trim() || undefined,
+                businessName: form.businessName.trim() || undefined,
+                city: city.trim() || undefined,
+                state: stateProv.trim() || undefined,
+                interests: form.interests,
+                otherInterest: form.otherInterest.trim() || undefined,
+                goal: form.goal.trim(),
+                readiness: form.readiness,
+                nextStep: form.nextStep,
+                source: "contact_inquiry",
+                page: "/contact",
+            };
+
+            const res = await api.post("/leads/consult", payload);
+            if (res.data?.success === false) {
+                throw new Error(res.data?.message || "Submit failed");
+            }
+
             setStatus("success");
-            setMsg("Thank you! Your inquiry has been (mock) submitted.");
-            setPhase(1);
+            setMsg(
+                res.data?.message ||
+                    "Thanks — we received your request and will follow up soon."
+            );
+            // Keep thank-you screen; clear fields for a follow-up submit
             setForm({
                 fullName: "",
                 email: "",
@@ -95,11 +137,41 @@ export default function InquiryFormMultiStep() {
             });
             setCity("");
             setStateProv("");
-        }, 1500);
+            setPhase(1);
+        } catch (err) {
+            console.error("Contact inquiry submit failed:", err);
+            setStatus("error");
+            setMsg(
+                err?.response?.data?.message ||
+                    "We couldn't submit your inquiry. Please try again or email hello@liftnlaunch.com."
+            );
+        }
     };
 
     return (
         <form onSubmit={onSubmit} className="w-full bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            {status === "success" ? (
+                <div className="text-center py-10 space-y-4">
+                    <div className="w-14 h-14 mx-auto rounded-full bg-green-50 text-green-600 flex items-center justify-center text-2xl font-bold">
+                        ✓
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">Thanks — we got it</h3>
+                    <p className="text-gray-600 text-sm max-w-md mx-auto">
+                        {msg || "We received your request and will follow up soon."}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setStatus("idle");
+                            setMsg("");
+                        }}
+                        className="mt-2 px-7 py-3 rounded-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-sm"
+                    >
+                        Send another message
+                    </button>
+                </div>
+            ) : (
+            <>
             {/* Step 1: Basic Information */}
             {phase === 1 && (
                 <section className="space-y-4">
@@ -311,6 +383,8 @@ export default function InquiryFormMultiStep() {
                   )}
                 </div>
             </div>
+            </>
+            )}
         </form>
     );
 }

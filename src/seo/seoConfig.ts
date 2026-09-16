@@ -65,9 +65,9 @@ export const pageSeo = {
     path: "/campaigns",
   },
   pricing: {
-    title: "Flexible Crowdfunding Packages & Pricing | Lift & Launch",
+    title: "Starter, Growth & Pro Elite Plans | Lift & Launch",
     description:
-      "Pricing tailored to your goals, campaign type, and growth stage — including founder-friendly payment plans.",
+      "SaaS pricing for LaunchVault: Starter $28.88, Growth $111, and Pro Elite $243 per month — plus a 1.5% Connect platform fee.",
     path: "/pricing",
   },
   signin: {

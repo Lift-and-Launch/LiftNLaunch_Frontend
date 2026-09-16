@@ -73,7 +73,11 @@ export default function ConsultationIntakeModal({ open, onClose }) {
 
         {/* Scrollable body — fills remaining viewport height */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 md:px-8 py-4 sm:py-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <ConsultationIntakeForm compact />
+          <ConsultationIntakeForm
+            compact
+            source="agency_consult"
+            page="/agency?consult=1"
+          />
         </div>
       </div>
     </div>

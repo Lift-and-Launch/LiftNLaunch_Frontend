@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import CanvasElement from "../components/canvas/CanvasElement";
 import api from "../api/axios";
+import { trackCampaignVisit } from "../utils/entitlements";
 
 export default function LiveWebsite() {
   const { campaignId, version } = useParams();
@@ -29,6 +30,7 @@ export default function LiveWebsite() {
 
         if (response.data.success && response.data.data) {
           setWebsiteData(response.data.data);
+          trackCampaignVisit(campaignId);
         } else {
           setError(response.data?.message || "Website not found");
         }
