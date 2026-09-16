@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
 import FAQSection from "../components/FAQSection";
+import OptimizedImage from "../components/OptimizedImage";
 import Seo from "../seo/Seo";
 import { pageSeo } from "../seo/seoConfig";
 
@@ -18,6 +19,7 @@ const features = [
     ],
     cta: "Use LaunchVault for Your Launch",
     highlight: "Available exclusively to Lift & Launch clients.",
+    image: "/images/tech-leader.webp",
   },
   {
     title: "Your Pre-Launch Funnel — No Tech Skills Needed",
@@ -29,6 +31,7 @@ const features = [
       "Collect pre-launch deposits and build your community before day one.",
     ],
     cta: "Start Building Your Pre-Launch Funnel",
+    image: "/images/whiteboard-team.webp",
   },
   {
     title: "Reach Audiences That Are Already Looking for You",
@@ -41,6 +44,7 @@ const features = [
     ],
     cta: "Start Targeting the Right Audience",
     highlight: "Skip the trial and error. Reach the right people faster, spend smarter, and scale quicker.",
+    image: "/images/client-1.webp",
   },
   {
     title: "Analytics That Actually Make Sense",
@@ -53,6 +57,7 @@ const features = [
     ],
     cta: "Take Control of Your Analytics",
     highlight: "No spreadsheets, no guesswork — just the numbers you need to raise more, faster.",
+    image: "/images/service-banner.webp",
   },
   {
     title: "Test What Works With Built-In A/B Testing",
@@ -65,6 +70,7 @@ const features = [
     ],
     cta: "Supercharge Your Campaign With A/B Testing",
     highlight: "Stop guessing. Start testing, improving, and converting.",
+    image: "/images/service-feature.webp",
   },
   {
     title: "AI-Powered. Human-Refined. Built to Convert.",
@@ -77,6 +83,7 @@ const features = [
     ],
     cta: "Supercharge Your Campaign With AI-Powered Copy",
     highlight: "No more writer’s block — just messaging built to convert.",
+    image: "/images/campaign-success.webp",
   },
   {
     title: "Full Ownership of Your Campaign",
@@ -89,6 +96,7 @@ const features = [
     ],
     cta: "Own Your Entire Crowdfunding Journey",
     highlight: "No middlemen, no platform restrictions — just full control.",
+    image: "/images/team-portrait.webp",
   },
   {
     title: "The Smartest Way to Maximize Your ROI",
@@ -101,6 +109,7 @@ const features = [
     ],
     cta: "Use LaunchVault for Your Launch",
     highlight: "Raise more, spend smarter, and scale faster.",
+    image: "/images/solar-team.webp",
   },
 ];
 
@@ -124,7 +133,7 @@ export default function Services() {
           most out of every dollar you spend.
         </p>
         <Link
-          to="/contact"
+          to="/signup"
           className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-8 py-3 rounded-full"
         >
           Get the Right Tools for Your Launch
@@ -138,14 +147,18 @@ export default function Services() {
             className="grid md:grid-cols-2 gap-10 items-center mb-20 border-b border-gray-100 pb-16 last:border-0"
           >
             <div className={i % 2 === 1 ? "md:order-2" : ""}>
-              <img
-                src="/service/image.png"
-                alt={feature.title}
-                className="rounded-lg w-full md:w-4/5 h-auto object-cover"
-                loading="lazy"
-                width={560}
-                height={360}
-              />
+              <div className="rounded-lg overflow-hidden shadow-md w-full md:w-4/5 aspect-[4/3]">
+                <OptimizedImage
+                  src={feature.image}
+                  alt={feature.title}
+                  className="w-full h-full object-cover"
+                  loading={i < 2 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : "auto"}
+                  width={560}
+                  height={420}
+                  sizes="(max-width: 768px) 100vw, 560px"
+                />
+              </div>
             </div>
             <div className={i % 2 === 1 ? "md:order-1" : ""}>
               <h2 className="text-2xl font-semibold mb-4 text-gray-900">
@@ -169,7 +182,7 @@ export default function Services() {
                 ))}
               </div>
               <Link
-                to="/contact"
+                to="/signup"
                 className="inline-block bg-yellow-400 text-black text-sm px-6 py-2 rounded-full hover:bg-yellow-500 transition font-semibold"
               >
                 {feature.cta}
@@ -181,11 +194,14 @@ export default function Services() {
 
       <section className="relative w-full bg-white mb-[120px]">
         <div className="relative w-full h-96 md:h-[420px]">
-          <img
-            src="/service/banner.webp"
+          <OptimizedImage
+            src="/images/team-group.webp"
             alt="Lift & Launch crowdfunding support"
-            className="object-cover w-full h-full"
+            className="object-cover object-center w-full h-full"
             loading="lazy"
+            width={1600}
+            height={600}
+            sizes="100vw"
           />
         </div>
         <div className="absolute bottom-[-80px] left-1/2 transform -translate-x-1/2 z-10 w-[90%] md:w-auto">
@@ -199,10 +215,10 @@ export default function Services() {
               faster — whatever kind of campaign you&apos;re running.
             </p>
             <Link
-              to="/contact"
+              to="/signup"
               className="inline-block bg-black text-white px-12 py-2 rounded-full hover:bg-black/90 transition-all duration-300 text-center mt-6"
             >
-              Book a Free Strategy Call
+              Get Started with LaunchVault
             </Link>
           </div>
         </div>

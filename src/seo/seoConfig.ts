@@ -34,6 +34,12 @@ export const pageSeo = {
       "Success starts before you launch. A proven six-step pre-launch process and four-step methodology to hit funding goals with real momentum.",
     path: "/process",
   },
+  agency: {
+    title: "Lift & Launch Agency — Expert Crowdfunding Support",
+    description:
+      "Need more than a platform? Get expert strategy, coaching, and hands-on launch support from the Lift & Launch Agency. Book a consultation to find the right path.",
+    path: "/agency",
+  },
   faq: {
     title: "Crowdfunding FAQs — Pricing, Funnels & Timeline | Lift & Launch",
     description:

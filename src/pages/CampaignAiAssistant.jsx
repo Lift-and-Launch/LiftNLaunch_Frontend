@@ -24,7 +24,7 @@ import { goToPricing } from '../utils/pricingNavigation';
 const TABS = [
   { id: 'suggestions', label: 'Suggestions', icon: Lightbulb },
   { id: 'score', label: 'Quality Score', icon: BarChart3 },
-  { id: 'landing', label: 'Landing Draft', icon: Layout },
+  { id: 'landing', label: 'Landing Page Draft', icon: Layout },
   { id: 'ads', label: 'Ad Copy', icon: Megaphone },
 ];
 

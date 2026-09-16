@@ -1,5 +1,6 @@
 import React from 'react';
 import Clients from './Clients';
+import OptimizedImage from './OptimizedImage';
 
 const Testimonials = () => {
   return (
@@ -21,10 +22,14 @@ const Testimonials = () => {
           <div className="w-full md:w-5/12 relative group">
             <div className="absolute -inset-4 bg-yellow-400/20 rounded-[2.5rem] -rotate-3 scale-95 group-hover:rotate-0 group-hover:scale-100 transition-all duration-500"></div>
             <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white">
-              <img
-                src="/index/image (5).png"
+              <OptimizedImage
+                src="/images/coffee-chat.webp"
                 alt="Featured Partner"
                 className="object-cover w-full h-[300px] md:h-[400px] transition-transform duration-700 group-hover:scale-110"
+                width={640}
+                height={400}
+                sizes="(max-width: 768px) 100vw, 420px"
+                loading="lazy"
               />
             </div>
           </div>

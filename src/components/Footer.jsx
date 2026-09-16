@@ -77,8 +77,8 @@ export default function Footer() {
               <Link to="/services" className="hover:text-yellow-400 transition">
                 LaunchVault
               </Link>
-              <Link to="/process" className="hover:text-yellow-400 transition">
-                Process
+              <Link to="/agency" className="hover:text-yellow-400 transition">
+                Agency
               </Link>
               <Link to="/campaigns" className="hover:text-yellow-400 transition">
                 Campaigns
