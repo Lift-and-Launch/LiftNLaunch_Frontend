@@ -53,6 +53,7 @@
     "globals": "^15.14.0",
     "postcss": "^8.5.9",
     "tailwindcss": "^4.2.2",
+    "typescript": "^7.0.2",
     "vite": "^6.0.5"
   }
 }
