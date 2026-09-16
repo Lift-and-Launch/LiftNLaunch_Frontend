@@ -430,7 +430,7 @@ const UserDashboardView = ({ logout, user }) => {
                      <>
                        <h3 className="text-2xl font-black mb-4 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">Stripe Connect</h3>
                        <p className="text-gray-400 font-bold text-sm leading-relaxed">
-                         Connect your Stripe account to enable live donations. Keep 95% of what you raise with our flat 5% platform fee.
+                         Connect your Stripe account to enable live donations. Connect payments include a 1.5% platform fee.
                        </p>
                      </>
                    )}

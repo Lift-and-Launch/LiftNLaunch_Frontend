@@ -265,25 +265,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const subscribe = async (plan = 'silver') => {
+  const subscribe = async (plan = 'starter') => {
     if (!user) return false;
     if (isSuperAdmin(user.role) && !user.adminOtpVerified) return false;
 
+    // Manual activate — admin/dev only. Self-serve users should use Stripe Checkout.
     try {
       const response = await api.post('/subscription/activate', { plan });
       if (response.data.success) {
-        const updatedUser = { ...user, isSubscribed: true };
-        setUser(updatedUser);
-        persistVerifiedSession(updatedUser);
+        await refreshUser();
         return true;
       }
     } catch (error) {
       console.error('Failed to activate subscription on server:', error);
     }
-    const updatedUser = { ...user, isSubscribed: true };
-    setUser(updatedUser);
-    persistVerifiedSession(updatedUser);
-    return true;
+    return false;
   };
 
   const refreshUser = async () => {

@@ -24,7 +24,7 @@ const features = [
   {
     title: "Your Pre-Launch Funnel — No Tech Skills Needed",
     description:
-      "Whether you’re launching a product, a service, or an equity round, Launch Vault helps you build a high-converting funnel that attracts the right backers and investors—and gets them ready to take action.",
+      "Whether you’re launching a product, a service, or an equity round, LaunchVault helps you build a high-converting funnel that attracts the right backers and investors—and gets them ready to take action.",
     items: [
       "Start from proven, high-converting templates.",
       "Customize everything with a simple drag-and-drop builder.",

@@ -315,7 +315,151 @@ async function readFileAsMeta(file) {
   return { name: file.name, size: file.size, type: file.type, dataUrl };
 }
 
-export default function ConsultationIntakeForm({ compact = false, onSuccess }) {
+const HELP_TOPIC_TO_INTEREST = {
+  "Business Model Development": "BIZ_MODEL_FINANCE",
+  "Business Strategy": "BIZ_MODEL_FINANCE",
+  "Crowdfunding Strategy": "CROWDFUNDING_SUPPORT",
+  "Campaign Preparation": "CROWDFUNDING_SUPPORT",
+  "Campaign Messaging & Storytelling": "STORY_BRAND_PITCH",
+  "MVP Strategy & Validation": "CROWDFUNDING_SUPPORT",
+  "Customer / Market Validation": "CROWDFUNDING_SUPPORT",
+  "Marketing Strategy": "MARKETING_PRELAUNCH",
+  "Funnel Strategy": "MARKETING_PRELAUNCH",
+  "Advertising Strategy": "MARKETING_PRELAUNCH",
+  "Pre-Launch Strategy": "MARKETING_PRELAUNCH",
+  "Launch Planning": "CROWDFUNDING_SUPPORT",
+  "Content Strategy": "STORY_BRAND_PITCH",
+  "Brand / Creative Strategy": "STORY_BRAND_PITCH",
+  "General Business Coaching": "BIZ_MODEL_FINANCE",
+  "Funding Readiness": "BIZ_MODEL_FINANCE",
+  Other: "OTHER",
+};
+
+function mapInterests(helpTopics) {
+  const mapped = new Set();
+  for (const topic of helpTopics || []) {
+    mapped.add(HELP_TOPIC_TO_INTEREST[topic] || "OTHER");
+  }
+  return [...mapped];
+}
+
+function mapReadiness(form) {
+  const stage = form.businessStage || "";
+  if (/exploring|idea/i.test(stage)) return "EXPLORING";
+  if (/preparing to launch|preparing to raise|first campaign/i.test(stage)) {
+    return "WITHIN_3_MONTHS";
+  }
+  if (/scale|existing business|already launched/i.test(stage)) {
+    return "THREE_TO_SIX_MONTHS";
+  }
+  if (/developing/i.test(stage)) return "THREE_TO_SIX_MONTHS";
+  return "EXPLORING";
+}
+
+function mapNextStep(form) {
+  if (
+    form.involvementLevel === "Full-Service Support" ||
+    form.involvementLevel === "Collaborative Support" ||
+    form.supportTypes?.some((t) => /execution|alongside|Full-service/i.test(t))
+  ) {
+    return "BOOK_CALL";
+  }
+  return "BOOK_CALL";
+}
+
+function serializeFileMeta(file) {
+  if (!file) return null;
+  return {
+    name: file.name || "",
+    size: file.size ?? 0,
+    type: file.type || "",
+    dataUrl: file.dataUrl || "",
+  };
+}
+
+/** Full intake payload — every form field + API aliases for email/admin. */
+function buildConsultLeadPayload(form, { source, page }) {
+  const interests = mapInterests(form.helpTopics);
+  if (form.crowdfundingType === "Investment / Equity" && !interests.includes("EQUITY_CROWDFUNDING")) {
+    interests.push("EQUITY_CROWDFUNDING");
+  }
+
+  const goalSummary = [
+    form.primaryGoals?.length ? `Primary goals: ${form.primaryGoals.join(", ")}` : null,
+    form.primaryGoalOther ? `Other goal: ${form.primaryGoalOther}` : null,
+    form.mainChallenge ? `Main challenge: ${form.mainChallenge}` : null,
+    form.consultationOutcome ? `Desired outcome: ${form.consultationOutcome}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return {
+    // —— Contact / identity (API core) ——
+    fullName: form.fullName.trim(),
+    email: form.email.trim(),
+    phone: form.phone?.trim() || "",
+    businessName: form.businessName?.trim() || "",
+    city: form.location?.trim() || "",
+    state: "",
+    interests,
+    otherInterest: form.helpOther?.trim() || "",
+    goal: goalSummary || form.mainChallenge?.trim() || "",
+    message: form.mainChallenge?.trim() || "",
+    readiness: mapReadiness(form),
+    nextStep: mapNextStep(form),
+    source,
+    page,
+
+    // —— Every intake field ——
+    websiteUrl: form.websiteUrl?.trim() || "",
+    location: form.location?.trim() || "",
+    businessStage: form.businessStage || "",
+    businessStageOther: form.businessStageOther?.trim() || "",
+    industry: form.industry?.trim() || "",
+    businessDescription: form.businessDescription?.trim() || "",
+    targetAudience: form.targetAudience?.trim() || "",
+    helpTopics: [...(form.helpTopics || [])],
+    helpOther: form.helpOther?.trim() || "",
+    mainChallenge: form.mainChallenge?.trim() || "",
+    consultationOutcome: form.consultationOutcome?.trim() || "",
+    primaryGoals: [...(form.primaryGoals || [])],
+    primaryGoalOther: form.primaryGoalOther?.trim() || "",
+    previousCampaign: form.previousCampaign || "",
+    crowdfundingType: form.crowdfundingType || "",
+    targetFundingAmount: form.targetFundingAmount?.trim() || "",
+    targetLaunchDate: form.targetLaunchDate || "",
+    crowdfundingPlatform: form.crowdfundingPlatform?.trim() || "",
+    completedItems: [...(form.completedItems || [])],
+    completedOther: form.completedOther?.trim() || "",
+    availableResources: [...(form.availableResources || [])],
+    resourcesOther: form.resourcesOther?.trim() || "",
+    supportTypes: [...(form.supportTypes || [])],
+    involvementLevel: form.involvementLevel || "",
+    linkWebsite: form.linkWebsite?.trim() || "",
+    linkCampaign: form.linkCampaign?.trim() || "",
+    pitchDeck: serializeFileMeta(form.pitchDeck),
+    mvpInfo: serializeFileMeta(form.mvpInfo),
+    otherDocs: serializeFileMeta(form.otherDocs),
+    reviewNotes: form.reviewNotes?.trim() || "",
+    discussSpecifics: form.discussSpecifics?.trim() || "",
+    hearAbout: form.hearAbout || "",
+    hearAboutOther: form.hearAboutOther?.trim() || "",
+    deadlineMilestone: form.deadlineMilestone?.trim() || "",
+    confirmGuidance: !!form.confirmGuidance,
+    confirmSeparateServices: !!form.confirmSeparateServices,
+    confirmTerms: !!form.confirmTerms,
+    signatureName: form.signatureName?.trim() || "",
+    signatureDate: form.signatureDate || "",
+    submittedAt: new Date().toISOString(),
+  };
+}
+
+export default function ConsultationIntakeForm({
+  compact = false,
+  onSuccess,
+  source = "agency_consult",
+  page = "/agency?consult=1",
+}) {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState("idle");
@@ -405,22 +549,21 @@ export default function ConsultationIntakeForm({ compact = false, onSuccess }) {
     setStatus("submitting");
     setMessage("");
     try {
-      const payload = {
-        ...form,
-        source: "consultation-intake",
-        submittedAt: new Date().toISOString(),
-      };
-      try {
-        await api.post("/contact/consultation-intake", payload);
-      } catch (apiErr) {
-        if (apiErr?.response?.status !== 404) throw apiErr;
-        await api.post("/contact", payload);
-      }
+      const payload = buildConsultLeadPayload(form, { source, page });
+      const res = await api.post("/leads/consult", payload);
+      const ok = res.data?.success !== false;
+      if (!ok) throw new Error(res.data?.message || "Submit failed");
+
       setStatus("success");
-      setMessage("Thank you! Your consultation intake was submitted. Our team will review and follow up.");
+      setMessage(
+        res.data?.message ||
+          "Thanks — we received your request and will follow up soon."
+      );
       setForm(emptyForm());
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      onSuccess?.();
+      if (!compact) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      onSuccess?.(res.data);
     } catch (err) {
       console.error("Consultation intake submit failed:", err);
       setStatus("error");
@@ -437,7 +580,9 @@ export default function ConsultationIntakeForm({ compact = false, onSuccess }) {
         <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-green-50 text-green-600 flex items-center justify-center mb-5">
           <Check size={compact ? 24 : 28} />
         </div>
-        <h3 className="text-xl sm:text-2xl font-bold text-[#001d59] mb-3">Intake received</h3>
+        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+          Thanks — we got it
+        </h3>
         <p className="text-gray-600 text-sm sm:text-base max-w-lg mx-auto mb-6 sm:mb-8">{message}</p>
         <button
           type="button"
