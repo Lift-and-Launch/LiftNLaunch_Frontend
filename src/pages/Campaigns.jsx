@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import api from "../api/axios";
+import OptimizedImage from "../components/OptimizedImage";
 import Seo from "../seo/Seo";
 import { pageSeo } from "../seo/seoConfig";
 
@@ -100,10 +101,15 @@ const Campaigns = () => {
             </button>
           </div>
           <div className="rounded-xl overflow-hidden shadow-md">
-            <img
-              src="/campaign/image (16).png"
+            <OptimizedImage
+              src="/images/campaign-success.webp"
               alt="success"
-              className="object-cover w-full h-auto"
+              className="w-full h-auto object-contain"
+              width={900}
+              height={700}
+              sizes="(max-width: 768px) 100vw, 560px"
+              loading="eager"
+              fetchPriority="high"
             />
           </div>
         </div>

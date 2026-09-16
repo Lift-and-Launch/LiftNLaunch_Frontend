@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import OptimizedImage from "./OptimizedImage";
 
 export default function Partnership() {
   return (
@@ -20,11 +21,14 @@ export default function Partnership() {
           reality.
         </p>
 
-        <div className="w-full max-w-6xl mx-auto md:mt-8 mt-4">
-          <img
-            src="/index/group.webp"
+        <div className="w-full max-w-6xl mx-auto md:mt-8 mt-4 rounded-2xl overflow-hidden shadow-md">
+          <OptimizedImage
+            src="/images/team-group.webp"
             alt="Lift & Launch creators and crowdfunding community"
             className="w-full h-auto object-contain"
+            width={1400}
+            height={900}
+            sizes="(max-width: 768px) 100vw, 1152px"
             loading="lazy"
           />
         </div>

@@ -172,7 +172,7 @@ const journeyStages = [
 ];
 
 function PrimaryButton({ children, onClick, to, className = "" }) {
-  const styles = `inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-sm transition cursor-pointer ${className}`;
+  const styles = `inline-flex items-center justify-center px-6 py-3 rounded-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold text-sm transition cursor-pointer ${className}`;
   if (to) {
     return (
       <Link to={to} className={styles}>
@@ -188,23 +188,7 @@ function PrimaryButton({ children, onClick, to, className = "" }) {
 }
 
 function SecondaryButton({ children, onClick, to, className = "" }) {
-  const styles = `inline-flex items-center justify-center px-7 py-3.5 rounded-full border border-gray-300 hover:border-gray-900 text-gray-900 font-semibold text-sm transition cursor-pointer bg-white ${className}`;
-  if (to) {
-    return (
-      <Link to={to} className={styles}>
-        {children}
-      </Link>
-    );
-  }
-  return (
-    <button type="button" onClick={onClick} className={styles}>
-      {children}
-    </button>
-  );
-}
-
-function DarkButton({ children, onClick, to, className = "" }) {
-  const styles = `inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-[#001d59] hover:bg-[#002a7a] text-white font-bold text-sm transition cursor-pointer ${className}`;
+  const styles = `inline-flex items-center justify-center px-6 py-3 rounded-full border border-gray-300 hover:border-gray-900 text-gray-900 font-medium text-sm transition cursor-pointer bg-white ${className}`;
   if (to) {
     return (
       <Link to={to} className={styles}>
@@ -245,7 +229,9 @@ export default function Agency() {
   }, [searchParams]);
 
   const scrollToServices = () => {
-    document.getElementById("agency-services")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document
+      .getElementById("agency-services")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
@@ -254,28 +240,28 @@ export default function Agency() {
       <ConsultationIntakeModal open={consultOpen} onClose={closeConsult} />
 
       {/* Hero */}
-      <section className="border-b border-amber-100 bg-gradient-to-b from-yellow-50/60 to-white">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-16 md:py-24">
-          <p className="text-sm font-semibold text-yellow-600 uppercase tracking-widest mb-3">
+      <section className="w-full border-b-2 border-amber-200 overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 md:py-16">
+          <p className="text-sm font-semibold text-yellow-600 uppercase mb-2">
             Lift &amp; Launch Agency
           </p>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#001d59] max-w-4xl leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 max-w-4xl leading-tight">
             Need More Than a Platform? Let&apos;s Build It Together.
           </h1>
-          <p className="mt-5 text-lg text-gray-700 max-w-3xl leading-relaxed">
+          <p className="mt-4 text-gray-700 text-base md:text-lg max-w-3xl leading-relaxed">
             Expert strategy, coaching, and hands-on support for entrepreneurs who want help
             turning their business or funding opportunity into action.
           </p>
-          <p className="mt-5 text-gray-600 max-w-3xl leading-relaxed">
+          <p className="mt-3 text-gray-600 text-sm md:text-base max-w-3xl leading-relaxed">
             The Lift &amp; Launch platform gives you the tools to move forward on your own. But
             sometimes you need an experienced team beside you — whether that&apos;s refining your
             business model, preparing a crowdfunding campaign, validating your MVP, building your
             launch strategy, or creating the content needed to tell your story.
           </p>
-          <p className="mt-4 font-semibold text-gray-900">
+          <p className="mt-3 font-semibold text-gray-900">
             That&apos;s where our Agency Services come in.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <PrimaryButton onClick={scrollToServices}>Explore Our Services</PrimaryButton>
             <SecondaryButton onClick={openConsult}>Book a Consultation</SecondaryButton>
           </div>
@@ -283,9 +269,9 @@ export default function Agency() {
       </section>
 
       {/* Support levels */}
-      <section id="agency-services" className="scroll-mt-24 py-16 md:py-24 px-4 md:px-8">
+      <section id="agency-services" className="scroll-mt-24 py-16 md:py-20 px-4 md:px-8 border-b-2 border-amber-200">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#001d59] max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 max-w-3xl">
             Expert Support. Built Around Your Stage.
           </h2>
           <p className="mt-4 text-gray-600 max-w-3xl leading-relaxed">
@@ -297,25 +283,23 @@ export default function Agency() {
             Choose the level of support that fits where you are today.
           </p>
 
-          <div className="mt-12 space-y-10">
+          <div className="mt-12 space-y-12">
             {supportLevels.map((level) => (
               <article
                 key={level.id}
                 id={level.id}
-                className="scroll-mt-28 rounded-[2rem] border border-gray-100 bg-gray-50/70 p-8 md:p-10"
+                className="scroll-mt-28 border-b border-gray-100 pb-12 last:border-0 last:pb-0"
               >
-                <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-10">
+                <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-10">
                   <div className="shrink-0">
-                    <span className="text-4xl font-black text-yellow-500">{level.number}</span>
+                    <span className="text-4xl font-bold text-yellow-500">{level.number}</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900">
-                      {level.name}
-                    </h3>
-                    <p className="mt-1 text-yellow-700 font-bold">{level.subtitle}</p>
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-900">{level.name}</h3>
+                    <p className="mt-1 text-yellow-700 font-semibold">{level.subtitle}</p>
                     <p className="mt-4 text-gray-700 font-medium">{level.forWho}</p>
                     <p className="mt-3 text-gray-600 leading-relaxed">{level.description}</p>
-                    <p className="mt-6 text-sm font-black uppercase tracking-widest text-gray-400">
+                    <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-gray-400">
                       Support can include
                     </p>
                     <ul className="mt-3 grid sm:grid-cols-2 gap-2">
@@ -336,8 +320,8 @@ export default function Agency() {
             ))}
           </div>
 
-          <div className="mt-12 rounded-[2rem] bg-[#001d59] text-white p-8 md:p-10 text-center">
-            <h3 className="text-2xl font-extrabold">Not sure what level of support you need?</h3>
+          <div className="mt-12 rounded-2xl bg-[#001d59] text-white p-8 md:p-10 text-center">
+            <h3 className="text-2xl font-bold">Not sure what level of support you need?</h3>
             <p className="mt-3 text-white/80 max-w-2xl mx-auto">
               Start with a consultation. We&apos;ll help you identify the right path.
             </p>
@@ -349,21 +333,16 @@ export default function Agency() {
       </section>
 
       {/* What can we help with */}
-      <section className="py-16 md:py-24 px-4 md:px-8 bg-gray-50 border-y border-gray-100">
+      <section className="py-16 md:py-20 px-4 md:px-8 border-b-2 border-amber-200 bg-yellow-400/10">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#001d59]">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
             What Can We Help You With?
           </h2>
-          <p className="mt-3 text-lg font-semibold text-gray-800">
-            From Business Model to Campaign Launch
-          </p>
-          <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <p className="mt-3 text-gray-700">From Business Model to Campaign Launch</p>
+          <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {helpAreas.map((area) => (
-              <div
-                key={area.title}
-                className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm"
-              >
-                <h3 className="text-lg font-extrabold text-gray-900">{area.title}</h3>
+              <div key={area.title} className="border-b border-gray-100 pb-6 last:border-0">
+                <h3 className="text-lg font-bold text-gray-900">{area.title}</h3>
                 <p className="mt-3 text-sm text-gray-600 leading-relaxed">{area.body}</p>
               </div>
             ))}
@@ -372,17 +351,15 @@ export default function Agency() {
       </section>
 
       {/* How we work */}
-      <section className="py-16 md:py-24 px-4 md:px-8">
+      <section className="py-16 md:py-20 px-4 md:px-8 border-b-2 border-amber-200">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#001d59]">How We Work</h2>
-          <p className="mt-3 text-lg font-semibold text-gray-800">
-            You Bring the Vision. We Help Build the Path.
-          </p>
-          <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-5">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">How We Work</h2>
+          <p className="mt-3 text-gray-700">You Bring the Vision. We Help Build the Path.</p>
+          <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8">
             {howWeWork.map((item) => (
-              <div key={item.step} className="rounded-2xl border border-gray-100 bg-gray-50 p-5">
-                <span className="text-2xl font-black text-yellow-500">{item.step}</span>
-                <h3 className="mt-2 font-extrabold text-gray-900">{item.title}</h3>
+              <div key={item.step}>
+                <span className="text-2xl font-bold text-yellow-500">{item.step}</span>
+                <h3 className="mt-2 font-bold text-gray-900">{item.title}</h3>
                 <p className="mt-2 text-sm text-gray-600 leading-relaxed">{item.body}</p>
               </div>
             ))}
@@ -391,21 +368,19 @@ export default function Agency() {
       </section>
 
       {/* Platform vs Agency */}
-      <section className="py-16 md:py-24 px-4 md:px-8 bg-yellow-50/50 border-y border-amber-100">
+      <section className="py-16 md:py-20 px-4 md:px-8 border-b-2 border-amber-200 bg-yellow-400/10">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#001d59] max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 max-w-3xl">
             SaaS When You Want to Do It Yourself.
             <br />
             Agency When You Want Expert Support.
           </h2>
-          <p className="mt-4 text-lg font-semibold text-gray-800">
-            Two Ways to Work With Lift &amp; Launch
-          </p>
+          <p className="mt-4 text-gray-700">Two Ways to Work With Lift &amp; Launch</p>
 
-          <div className="mt-10 grid md:grid-cols-2 gap-6">
-            <div className="rounded-[2rem] bg-white border border-gray-100 p-8 shadow-sm">
-              <h3 className="text-2xl font-extrabold text-gray-900">Use the Platform</h3>
-              <p className="mt-2 text-sm font-bold text-yellow-700">
+          <div className="mt-10 grid md:grid-cols-2 gap-10 md:gap-12">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Use the Platform</h3>
+              <p className="mt-2 text-sm font-semibold text-yellow-700">
                 For entrepreneurs who want to take the lead.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
@@ -416,9 +391,9 @@ export default function Agency() {
                 <PrimaryButton to="/services">Explore the Platform</PrimaryButton>
               </div>
             </div>
-            <div className="rounded-[2rem] bg-white border border-gray-100 p-8 shadow-sm">
-              <h3 className="text-2xl font-extrabold text-gray-900">Work With Our Agency</h3>
-              <p className="mt-2 text-sm font-bold text-yellow-700">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Work With Our Agency</h3>
+              <p className="mt-2 text-sm font-semibold text-yellow-700">
                 For entrepreneurs who want expert guidance or hands-on support.
               </p>
               <p className="mt-4 text-gray-600 leading-relaxed">
@@ -426,79 +401,39 @@ export default function Agency() {
                 assistance from the Lift &amp; Launch team.
               </p>
               <div className="mt-6">
-                <SecondaryButton onClick={scrollToServices}>Explore Agency Services</SecondaryButton>
+                <SecondaryButton onClick={scrollToServices}>
+                  Explore Agency Services
+                </SecondaryButton>
               </div>
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-2xl bg-white border border-gray-100 p-8 text-center">
-            <h3 className="text-xl font-extrabold text-gray-900">
-              Need Help With Something Specific?
-            </h3>
-            <p className="mt-3 text-gray-600 max-w-2xl mx-auto">
-              You don&apos;t necessarily need a full agency engagement. If you have a specific
-              challenge, question, or area where you need expert guidance, you can book a
-              consultation separately.
-            </p>
-            <div className="mt-6">
-              <PrimaryButton onClick={openConsult}>Book a Consultation</PrimaryButton>
             </div>
           </div>
         </div>
       </section>
 
       {/* Journey stages */}
-      <section className="py-16 md:py-24 px-4 md:px-8">
+      <section className="py-16 md:py-20 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-[#001d59]">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
             Built for Different Stages of the Journey
           </h2>
-          <p className="mt-3 text-lg font-semibold text-gray-800">
+          <p className="mt-3 text-gray-700">
             Wherever You Are, There&apos;s a Way Forward.
           </p>
-          <div className="mt-10 space-y-4">
+          <div className="mt-10 space-y-0 divide-y divide-gray-100 border-t border-b border-gray-100">
             {journeyStages.map((stage) => (
               <div
                 key={stage.title}
-                className="rounded-2xl border border-gray-100 bg-gray-50 px-6 py-5 flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-4"
+                className="py-5 flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-4"
               >
-                <h3 className="font-extrabold text-gray-900 shrink-0 sm:min-w-[240px]">
+                <h3 className="font-bold text-gray-900 shrink-0 sm:min-w-[240px]">
                   {stage.title}
                 </h3>
                 <p className="text-gray-600">
-                  <span className="text-yellow-600 font-bold mr-2">→</span>
+                  <span className="text-yellow-600 font-semibold mr-2">→</span>
                   {stage.body}
                 </p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-16 md:py-24 px-4 md:px-8 bg-[#001d59] text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold">
-            Ready to Move From Planning to Action?
-          </h2>
-          <p className="mt-5 text-white/80 leading-relaxed">
-            Whether you need a strategic conversation, structured coaching, or a team to help
-            execute your launch, we&apos;re here to meet you where you are.
-          </p>
-          <p className="mt-4 font-semibold text-yellow-300">
-            Start with the Lift &amp; Launch platform. Add expert support when you need it.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <PrimaryButton to="/services">Explore the Platform</PrimaryButton>
-            <SecondaryButton onClick={openConsult} className="!bg-transparent !text-white !border-white/40 hover:!border-white hover:!bg-white/10">
-              Book a Consultation
-            </SecondaryButton>
-            <DarkButton
-              onClick={openConsult}
-              className="!bg-white !text-[#001d59] hover:!bg-yellow-400"
-            >
-              Talk to Our Agency Team
-            </DarkButton>
           </div>
         </div>
       </section>

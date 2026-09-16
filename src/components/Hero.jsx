@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
+import OptimizedImage from "./OptimizedImage";
 
-const imagesLeftColumn = ["/index/image (1).png", "/index/image (3).png"];
-const imagesRightColumn = ["/index/image (2).png", "/index/image (4).png"];
+const imagesLeftColumn = ["/images/hero-1.webp", "/images/hero-3.webp"];
+const imagesRightColumn = ["/images/hero-2.webp", "/images/hero-4.webp"];
 
 export default function Hero() {
   const leftTextRef = useRef(null);
@@ -102,29 +103,37 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="flex w-full md:w-1/2 justify-center gap-4">
-          <div className="flex flex-col gap-4 md:gap-6">
+        <div className="flex w-full md:w-1/2 justify-center gap-3 sm:gap-4">
+          <div className="flex flex-col gap-3 sm:gap-4 md:gap-5">
             {imagesLeftColumn.map((src, idx) => (
               <div
                 key={idx}
                 ref={(el) => addToImagesRefs(el)}
                 onMouseEnter={() => handleMouseEnter(idx)}
                 onMouseLeave={() => handleMouseLeave(idx)}
-                className={`cursor-pointer inline-block ${idx === 0 ? "md:-mt-6" : ""}`}
+                className={`cursor-pointer overflow-hidden rounded-lg shadow-md ${
+                  idx === 0 ? "md:-mt-8" : ""
+                } w-[160px] sm:w-[200px] md:w-[240px] ${
+                  idx === 0
+                    ? "h-[210px] sm:h-[260px] md:h-[300px]"
+                    : "h-[180px] sm:h-[220px] md:h-[250px]"
+                }`}
               >
-                <img
+                <OptimizedImage
                   alt={`Lift & Launch campaign success visual ${idx + 1}`}
-                  loading="lazy"
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  fetchPriority={idx === 0 ? "high" : "low"}
                   width={300}
                   height={400}
-                  className="rounded-lg w-[200px] sm:w-[250px] md:w-[280px]"
+                  sizes="(max-width: 640px) 160px, (max-width: 768px) 200px, 240px"
+                  className="w-full h-full object-cover"
                   src={src}
                 />
               </div>
             ))}
           </div>
 
-          <div className="flex flex-col gap-4 md:gap-6">
+          <div className="flex flex-col gap-3 sm:gap-4 md:gap-5 md:mt-10">
             {imagesRightColumn.map((src, idx) => {
               const imageIndex = idx + imagesLeftColumn.length;
               return (
@@ -133,14 +142,20 @@ export default function Hero() {
                   ref={(el) => addToImagesRefs(el)}
                   onMouseEnter={() => handleMouseEnter(imageIndex)}
                   onMouseLeave={() => handleMouseLeave(imageIndex)}
-                  className="cursor-pointer inline-block"
+                  className={`cursor-pointer overflow-hidden rounded-lg shadow-md w-[160px] sm:w-[200px] md:w-[240px] ${
+                    idx === 0
+                      ? "h-[180px] sm:h-[220px] md:h-[250px]"
+                      : "h-[210px] sm:h-[260px] md:h-[300px]"
+                  }`}
                 >
-                  <img
+                  <OptimizedImage
                     alt={`Lift & Launch campaign success visual ${imageIndex + 1}`}
                     loading="lazy"
+                    fetchPriority="low"
                     width={300}
                     height={400}
-                    className="rounded-lg w-[200px] sm:w-[250px] md:w-[280px]"
+                    sizes="(max-width: 640px) 160px, (max-width: 768px) 200px, 240px"
+                    className="w-full h-full object-cover"
                     src={src}
                   />
                 </div>

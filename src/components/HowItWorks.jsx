@@ -62,7 +62,7 @@ export default function HowItWorks() {
     },
     {
       step: "5",
-      image: "/index/svg 1.png",
+      image: "/index/svg 2.png",
       title: "Launch and Get Funded — Fast",
       description:
         "With the right groundwork in place, most of our campaigns hit their funding goal within 7 days.",

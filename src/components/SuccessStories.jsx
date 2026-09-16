@@ -2,12 +2,13 @@ import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import OptimizedImage from "./OptimizedImage";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const stories = [
   {
-    image: "/index/image (5).png",
+    image: "/images/story-scale.webp",
     title: "You've Built It. We'll Help You Scale It.",
     description: `We've guided enough campaigns to know what's running through your mind right now: "I've been sitting on this idea for years — can it really become a business?" "I know I need marketing, but what actually works for a product like mine?" "Other launches seem to take off overnight — why does mine feel so hard?"`,
   },
@@ -66,12 +67,13 @@ export default function SuccessStories() {
             >
               <div className="w-full md:w-1/2 group">
                 <div className="relative rounded-[2rem] overflow-hidden shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]">
-                  <img
+                  <OptimizedImage
                     src={story.image}
                     alt={story.title}
-                    className="w-full h-[300px] md:h-[450px] object-cover"
+                    className="w-full h-[280px] md:h-[400px] object-cover object-center"
                     width={640}
                     height={450}
+                    sizes="(max-width: 768px) 100vw, 560px"
                     loading="lazy"
                   />
                 </div>

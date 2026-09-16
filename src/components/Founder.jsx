@@ -1,15 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import OptimizedImage from "./OptimizedImage";
 
 export default function Founder() {
   return (
     <section className="py-20 px-4 md:px-16 bg-white max-w-7xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <div className="relative w-full h-[400px] md:h-[500px] rounded-xl overflow-hidden shadow-md">
-          <img
-            src="/index/image (12).png"
+          <OptimizedImage
+            src="/images/partner-handshake.webp"
             alt="Lift & Launch crowdfunding partnership"
-            className="object-cover w-full h-full"
+            className="object-cover object-center w-full h-full"
+            width={900}
+            height={700}
+            sizes="(max-width: 768px) 100vw, 560px"
             loading="lazy"
           />
         </div>
@@ -83,6 +87,7 @@ export default function Founder() {
             src="https://www.youtube.com/embed/k7o9R6eaSes?si=sUSPSDcL2hgVWtWd"
             title="How to raise funds with Lift & Launch crowdfunding strategy"
             frameBorder="0"
+            loading="lazy"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />

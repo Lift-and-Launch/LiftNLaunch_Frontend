@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import gsap from "gsap";
 import { Link } from "react-router-dom";
+import OptimizedImage from "./OptimizedImage";
 
 const testimonials = [
   {
     name: "Sarah Johnson",
     role: "Founder, Green Neighborhood",
-    photo: "/index/Ellipse 7.png",
+    photo: "/images/client-1.webp",
     quote:
       "This platform empowered us to raise the funds we needed to bring clean parks to our community. The process was simple and the support was incredible!",
     rating: 5,
@@ -14,7 +15,7 @@ const testimonials = [
   {
     name: "David Kim",
     role: "Local Artist",
-    photo: "/index/Ellipse 8.png",
+    photo: "/images/client-2.webp",
     quote:
       "I launched my first art project here and reached more backers than I ever imagined. Truly a game-changer for creative people.",
     rating: 4,
@@ -22,7 +23,7 @@ const testimonials = [
   {
     name: "Maria Lopez",
     role: "Small Business Owner",
-    photo: "/index/Ellipse 9.png",
+    photo: "/images/client-3.webp",
     quote:
       "Thanks to the support from this community, I was able to expand my business and hire more locals. Highly recommend it!",
     rating: 5,
@@ -159,10 +160,14 @@ export default function Clients() {
                     className="w-20 h-20 rounded-full overflow-hidden border-4 absolute top-1/2 left-1/2"
                     style={{ transform: "translate(-50%, -50%)" }}
                   >
-                    <img
+                    <OptimizedImage
                       src={testimonials[index].photo}
                       alt={testimonials[index].name}
-                      className="object-cover w-full h-full"
+                      className="object-cover object-top w-full h-full"
+                      width={80}
+                      height={80}
+                      sizes="80px"
+                      loading="lazy"
                     />
                   </div>
                 )

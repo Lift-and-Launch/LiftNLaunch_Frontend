@@ -8,6 +8,19 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    build: {
+      target: "es2020",
+      cssCodeSplit: true,
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ["react", "react-dom", "react-router-dom"],
+            gsap: ["gsap"],
+          },
+        },
+      },
+    },
     server: {
       port: 5173,
       proxy: {
