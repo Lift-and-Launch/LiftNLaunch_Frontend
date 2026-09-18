@@ -35,6 +35,49 @@ const buildSession = (payload, extras = {}) => ({
   ...extras,
 });
 
+/** Merge /auth/me payload — server is source of truth for entitlement & coach fields. */
+const mergeApiUser = (existing, apiUser, tokenExtras = {}) => {
+  const subscribed =
+    apiUser.isSubscribed ?? apiUser.subscription?.isSubscribed ?? existing.isSubscribed ?? false;
+  return {
+    ...existing,
+    ...apiUser,
+    isSubscribed: Boolean(subscribed),
+    subscription: apiUser.subscription || existing.subscription || null,
+    adminApprovalStatus: apiUser.adminApprovalStatus ?? existing.adminApprovalStatus,
+    ...tokenExtras,
+  };
+};
+
+/** Attach trial/plan fields from entitlements onto the session user. */
+const mergeEntitlementsOntoUser = async (userBase) => {
+  try {
+    // Dynamic import avoids circular dependency at module load.
+    const { fetchEntitlements } = await import("../utils/entitlements");
+    const ent = await fetchEntitlements();
+    if (!ent) return userBase;
+    return {
+      ...userBase,
+      isSubscribed: Boolean(ent.isSubscribed ?? userBase.isSubscribed),
+      isTrialing: Boolean(ent.isTrialing),
+      trialUsed: Boolean(ent.trialUsed),
+      trialEndsAt: ent.trialEndsAt || null,
+      trialDaysRemaining: ent.trialDaysRemaining ?? null,
+      subscriptionStatus: ent.subscriptionStatus || userBase.subscriptionStatus,
+      subscription: {
+        ...(userBase.subscription || {}),
+        plan: ent.plan || userBase.subscription?.plan,
+        isSubscribed: Boolean(ent.isSubscribed),
+        subscriptionStatus: ent.subscriptionStatus,
+        status: ent.subscriptionStatus,
+        currentPeriodEnd: ent.trialEndsAt || userBase.subscription?.currentPeriodEnd,
+      },
+    };
+  } catch {
+    return userBase;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -79,12 +122,14 @@ export const AuthProvider = ({ children }) => {
 
         const response = await api.get('/auth/me');
         if (response.data.success) {
-          setUser({
-            ...userData,
-            ...response.data.user,
+          const merged = mergeApiUser(userData, response.data.user || {}, {
+            token: userData.token,
             otpRequired: false,
             adminOtpVerified: true,
           });
+          const withEntitlements = await mergeEntitlementsOntoUser(merged);
+          setUser(withEntitlements);
+          persistVerifiedSession(withEntitlements);
         } else {
           clearAllSessions();
         }
@@ -112,6 +157,9 @@ export const AuthProvider = ({ children }) => {
           adminOtpVerified: false,
           challengeId: data.challengeId ? String(data.challengeId) : null,
         });
+        if (import.meta.env.DEV && data.devOtp) {
+          console.info('[admin otp][dev only]', data.devOtp);
+        }
         setUser(userData);
         persistPendingOtpSession(userData);
 
@@ -121,6 +169,9 @@ export const AuthProvider = ({ children }) => {
             const otpPayload = parseOtpRequestPayload(otpRes.data);
             if (otpPayload?.challengeId) {
               userData.challengeId = String(otpPayload.challengeId);
+              if (import.meta.env.DEV && otpPayload.devOtp) {
+                console.info('[admin otp][dev only]', otpPayload.devOtp);
+              }
               setUser({ ...userData });
               persistPendingOtpSession(userData);
             }
@@ -145,8 +196,9 @@ export const AuthProvider = ({ children }) => {
           adminOtpVerified: true,
           challengeId: null,
         });
-        setUser(userData);
-        persistVerifiedSession(userData);
+        const withEntitlements = await mergeEntitlementsOntoUser(userData);
+        setUser(withEntitlements);
+        persistVerifiedSession(withEntitlements);
         return { success: true };
       }
 
@@ -189,14 +241,12 @@ export const AuthProvider = ({ children }) => {
         try {
           const meRes = await api.get('/auth/me');
           if (meRes.data.success && meRes.data.user) {
-            userData = {
-              ...userData,
-              ...meRes.data.user,
+            userData = mergeApiUser(userData, meRes.data.user, {
               token: data.token,
               otpRequired: false,
               adminOtpVerified: true,
               challengeId: null,
-            };
+            });
           }
         } catch (meError) {
           console.warn('Could not refresh profile after OTP verify:', meError);
@@ -233,6 +283,9 @@ export const AuthProvider = ({ children }) => {
           otpRequired: true,
           adminOtpVerified: false,
         };
+        if (import.meta.env.DEV && payload.devOtp) {
+          console.info('[admin otp][dev only]', payload.devOtp);
+        }
         setUser(updated);
         persistPendingOtpSession(updated);
         return { success: true };
@@ -290,12 +343,14 @@ export const AuthProvider = ({ children }) => {
       if (response.data.success) {
         const savedUser = localStorage.getItem(USER_STORAGE_KEY);
         const userData = savedUser ? JSON.parse(savedUser) : {};
-        const updatedUser = {
-          ...userData,
-          ...response.data.user,
+        let updatedUser = mergeApiUser(userData, response.data.user || {}, {
+          token: userData.token,
           otpRequired: false,
           adminOtpVerified: true,
-        };
+        });
+
+        updatedUser = await mergeEntitlementsOntoUser(updatedUser);
+
         setUser(updatedUser);
         persistVerifiedSession(updatedUser);
         return updatedUser;

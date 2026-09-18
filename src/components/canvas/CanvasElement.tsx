@@ -560,8 +560,9 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
               display: "grid",
               gridTemplateColumns: isMobileView
                 ? "1fr"
-                : `repeat(${styles.gridColumns || 3}, 1fr)`,
-              gap: styles.gap || "16px",
+                : `repeat(${styles.gridColumns || 3}, minmax(0, 1fr))`,
+              gap: styles.gap || "20px",
+              alignItems: "stretch",
             }}
           >
             {isSelected && (
@@ -603,11 +604,11 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
             }`}
             style={{
               ...getElementStyle(),
-              display: "grid",
-              gridTemplateColumns: isMobileView
-                ? "1fr"
-                : `repeat(${styles.gridColumns || 2}, 1fr)`,
-              gap: styles.gap || "20px",
+              display: "flex",
+              flexDirection: isMobileView ? "column" : "row",
+              flexWrap: "nowrap",
+              gap: styles.gap || "24px",
+              alignItems: "stretch",
             }}
           >
             {isSelected && (
@@ -624,15 +625,22 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
               </div>
             )}
             {element.children?.map((child: WebsiteElement) => (
-              <CanvasElement
+              <div
                 key={child.id}
-                element={child}
-                isSelected={selectedElement === child.id}
-                isPreviewMode={isPreviewMode}
-                paymentOptionActive={paymentOptionActive}
-                campaignId={campaignId}
-                isStripeConnected={isStripeConnected}
-              />
+                style={{
+                  flex: isMobileView ? "1 1 auto" : `1 1 ${100 / (element.children?.length || 2)}%`,
+                  minWidth: 0,
+                }}
+              >
+                <CanvasElement
+                  element={child}
+                  isSelected={selectedElement === child.id}
+                  isPreviewMode={isPreviewMode}
+                  paymentOptionActive={paymentOptionActive}
+                  campaignId={campaignId}
+                  isStripeConnected={isStripeConnected}
+                />
+              </div>
             ))}
           </div>
         );

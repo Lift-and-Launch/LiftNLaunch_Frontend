@@ -67,7 +67,7 @@ export const pageSeo = {
   pricing: {
     title: "Starter, Growth & Pro Elite Plans | Lift & Launch",
     description:
-      "SaaS pricing for LaunchVault: Starter $28.88, Growth $111, and Pro Elite $243 per month — plus a 1.5% Connect platform fee.",
+      "SaaS pricing for LaunchVault: Starter $28.88 (15-day free trial), Growth $111, and Pro Elite $243 per month — plus a 1.5% Connect platform fee.",
     path: "/pricing",
   },
   signin: {

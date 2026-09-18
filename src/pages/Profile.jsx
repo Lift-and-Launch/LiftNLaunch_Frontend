@@ -12,20 +12,185 @@ import {
   Megaphone,
   Globe,
   Loader2,
-  ChevronLeft
+  ChevronLeft,
+  Trash2,
+  X,
+  Ban,
 } from "lucide-react";
 import api from "../api/axios";
 import { goToPricing } from "../utils/pricingNavigation";
-import { fetchEntitlements } from "../utils/entitlements";
+import { fetchEntitlements, isTrialing } from "../utils/entitlements";
+import TrialBanner from "../components/TrialBanner";
 import { formatPlanLabel, isUnlimitedCampaigns } from "../utils/plans";
 
+const btnBase =
+  "cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
+
+function ConfirmModal({
+  open,
+  title,
+  description,
+  icon: Icon = AlertCircle,
+  accent = "red",
+  confirmLabel = "Confirm",
+  confirmingLabel = "Working…",
+  cancelLabel = "Go back",
+  confirming = false,
+  error = "",
+  requireTypedConfirm = null,
+  typedValue = "",
+  onTypedChange,
+  onClose,
+  onConfirm,
+}) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  const accents = {
+    red: {
+      bar: "from-red-500 via-rose-400 to-red-600",
+      iconBg: "bg-red-100 text-red-600",
+      confirm: "bg-red-600 hover:bg-red-700 text-white shadow-red-600/20",
+    },
+    amber: {
+      bar: "from-amber-400 via-yellow-300 to-amber-500",
+      iconBg: "bg-amber-100 text-amber-700",
+      confirm: "bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/20",
+    },
+  };
+  const tone = accents[accent] || accents.red;
+  const typedOk = !requireTypedConfirm || typedValue === requireTypedConfirm;
+
+  return (
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !confirming) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-confirm-title"
+        className="w-full max-w-lg rounded-[2rem] bg-white shadow-2xl border border-gray-100 overflow-hidden animate-[fadeInUp_0.3s_ease-out]"
+      >
+        <div className={`h-1.5 w-full bg-gradient-to-r ${tone.bar}`} />
+        <div className="p-6 sm:p-8 space-y-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div
+                className={`w-12 h-12 rounded-2xl ${tone.iconBg} flex items-center justify-center shrink-0 shadow-inner`}
+              >
+                <Icon size={22} />
+              </div>
+              <div>
+                <h2
+                  id="profile-confirm-title"
+                  className="text-xl font-black text-gray-900 tracking-tight"
+                >
+                  {title}
+                </h2>
+                <p className="text-sm text-gray-500 font-medium mt-1 leading-relaxed">
+                  {description}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={confirming}
+              className={`${btnBase} p-2 rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-700`}
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {requireTypedConfirm && (
+            <div>
+              <label
+                htmlFor="profile-typed-confirm"
+                className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2"
+              >
+                Type {requireTypedConfirm} to confirm
+              </label>
+              <input
+                id="profile-typed-confirm"
+                type="text"
+                value={typedValue}
+                disabled={confirming}
+                onChange={(e) => onTypedChange?.(e.target.value)}
+                placeholder={requireTypedConfirm}
+                autoComplete="off"
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-red-400/30 focus:border-red-400 outline-none font-bold text-sm text-gray-900 placeholder:text-gray-300 tracking-widest"
+              />
+            </div>
+          )}
+
+          {error && (
+            <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+              {error}
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={confirming || !typedOk}
+              className={`${btnBase} inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest shadow-md ${tone.confirm}`}
+            >
+              {confirming ? <Loader2 className="animate-spin" size={14} /> : null}
+              {confirming ? confirmingLabel : confirmLabel}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={confirming}
+              className={`${btnBase} px-5 py-3 rounded-xl border border-gray-200 text-xs font-black uppercase tracking-widest text-gray-500 hover:bg-gray-50`}
+            >
+              {cancelLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function Profile() {
-  const { user, refreshUser, loading: authLoading } = useAuth();
+  const { user, refreshUser, loading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [refreshing, setRefreshing] = useState(false);
   const [businesses, setBusinesses] = useState([]);
   const [loadingBiz, setLoadingBiz] = useState(false);
+  const [actionLoading, setActionLoading] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteTyped, setDeleteTyped] = useState("");
   const [entitlements, setEntitlements] = useState(null);
 
   useEffect(() => {
@@ -62,6 +227,77 @@ export default function Profile() {
     }
   }, [user]);
 
+  const openCancelModal = () => {
+    setCancelError("");
+    setActionError("");
+    setCancelOpen(true);
+  };
+
+  const closeCancelModal = () => {
+    if (actionLoading === "cancel") return;
+    setCancelOpen(false);
+    setCancelError("");
+  };
+
+  const confirmCancelSubscription = async () => {
+    setCancelError("");
+    setActionError("");
+    setActionSuccess("");
+    setActionLoading("cancel");
+    try {
+      const res = await api.post("/subscription/cancel");
+      if (res.data.success) {
+        setCancelOpen(false);
+        setActionSuccess("Subscription cancelled.");
+        await refreshUser();
+      } else {
+        setCancelError(res.data.message || "Could not cancel subscription.");
+      }
+    } catch (err) {
+      setCancelError(err.response?.data?.message || "Could not cancel subscription.");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const openDeleteModal = () => {
+    setDeleteError("");
+    setDeleteTyped("");
+    setActionError("");
+    setDeleteOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (actionLoading === "delete") return;
+    setDeleteOpen(false);
+    setDeleteError("");
+    setDeleteTyped("");
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (deleteTyped !== "DELETE") {
+      setDeleteError("Type DELETE exactly to confirm.");
+      return;
+    }
+    setDeleteError("");
+    setActionError("");
+    setActionSuccess("");
+    setActionLoading("delete");
+    try {
+      const res = await api.delete("/auth/me");
+      if (res.data.success) {
+        logout();
+        navigate("/signin", { replace: true });
+      } else {
+        setDeleteError(res.data.message || "Could not delete account.");
+      }
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || "Could not delete account.");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
   if (authLoading || (!user && refreshing)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -93,7 +329,9 @@ export default function Profile() {
     entitlements?.isSubscribed ||
     user.isSubscribed ||
     user.subscription?.isSubscribed;
-  const currentPeriodEnd = user.subscription?.currentPeriodEnd;
+  const trialing = isTrialing(entitlements);
+  const currentPeriodEnd =
+    entitlements?.trialEndsAt || user.subscription?.currentPeriodEnd;
   const planKey = entitlements?.plan || user.subscription?.plan || "none";
   const planName = formatPlanLabel(planKey);
   const subStatus =
@@ -112,6 +350,9 @@ export default function Profile() {
     });
     const diffTime = expiryDate.getTime() - new Date().getTime();
     daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+  if (trialing && typeof entitlements?.trialDaysRemaining === "number") {
+    daysLeft = entitlements.trialDaysRemaining;
   }
 
   const getPlanBadgeStyles = (plan) => {
@@ -154,6 +395,38 @@ export default function Profile() {
   })();
 
   return (
+    <>
+      <ConfirmModal
+        open={cancelOpen}
+        title="Cancel subscription?"
+        description="You’ll lose premium access to templates, custom domains, split testing, and campaign tools. You can re-subscribe anytime from Pricing."
+        icon={Ban}
+        accent="amber"
+        confirmLabel="Cancel subscription"
+        confirmingLabel="Cancelling…"
+        cancelLabel="Keep subscription"
+        confirming={actionLoading === "cancel"}
+        error={cancelError}
+        onClose={closeCancelModal}
+        onConfirm={confirmCancelSubscription}
+      />
+      <ConfirmModal
+        open={deleteOpen}
+        title="Delete account permanently?"
+        description="This removes your account, campaigns, and landing pages. This cannot be undone."
+        icon={Trash2}
+        accent="red"
+        confirmLabel="Delete account"
+        confirmingLabel="Deleting…"
+        cancelLabel="Keep account"
+        confirming={actionLoading === "delete"}
+        error={deleteError}
+        requireTypedConfirm="DELETE"
+        typedValue={deleteTyped}
+        onTypedChange={setDeleteTyped}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDeleteAccount}
+      />
     <div className="min-h-screen bg-slate-50 py-12 px-6">
       <div className="max-w-4xl mx-auto space-y-8">
         
@@ -171,6 +444,8 @@ export default function Profile() {
             </span>
           )}
         </div>
+
+        <TrialBanner />
 
         {/* Profile Card Header */}
         <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 sm:p-10 shadow-sm relative overflow-hidden flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -215,9 +490,15 @@ export default function Profile() {
                   
                   <div className={`p-6 rounded-3xl ${getPlanBadgeStyles(planKey)} flex items-center justify-between shadow-lg relative overflow-hidden group`}>
                     <div className="space-y-1 relative z-10">
-                      <span className="text-[9px] font-black uppercase tracking-widest opacity-80">Active Plan</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest opacity-80">
+                        {trialing ? "Free Trial" : "Active Plan"}
+                      </span>
                       <h4 className="text-2xl font-black uppercase tracking-tight">{planName}</h4>
-                      <p className="text-[10px] font-bold opacity-90">Auto-renews next cycle · 1.5% Connect fee</p>
+                      <p className="text-[10px] font-bold opacity-90">
+                        {trialing
+                          ? `Trial ends ${formattedExpiry} · then ${planName} billing`
+                          : "Auto-renews next cycle · 1.5% Connect fee"}
+                      </p>
                     </div>
                     <CreditCard size={48} className="opacity-15 absolute right-6 top-1/2 -translate-y-1/2" />
                   </div>
@@ -225,12 +506,14 @@ export default function Profile() {
                   <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                     <div className="space-y-1">
                       <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Subscription Status</span>
-                      <div className="flex items-center gap-1.5 text-xs font-black text-green-600 uppercase">
+                      <div className={`flex items-center gap-1.5 text-xs font-black uppercase ${trialing ? "text-amber-600" : "text-green-600"}`}>
                         <CheckCircle2 size={16} /> {subStatus}
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Renewal Date</span>
+                      <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">
+                        {trialing ? "Trial Ends" : "Renewal Date"}
+                      </span>
                       <div className="flex items-center gap-1.5 text-xs font-black text-gray-800">
                         <Calendar size={16} className="text-gray-400" /> {formattedExpiry}
                       </div>
@@ -260,7 +543,9 @@ export default function Profile() {
                     <div className="flex justify-between items-end">
                       <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Time Remaining</span>
                       <span className="text-sm font-black text-gray-900">
-                        {daysLeft > 0 ? `${daysLeft} Days Left` : "Expired / Suspended"}
+                        {daysLeft > 0
+                          ? `${daysLeft} Days Left${trialing ? " (trial)" : ""}`
+                          : "Expired / Suspended"}
                       </span>
                     </div>
                     
@@ -269,18 +554,43 @@ export default function Profile() {
                         className={`h-full rounded-full transition-all duration-1000 ${
                           daysLeft > 10 ? "bg-green-500" : daysLeft > 5 ? "bg-yellow-500" : "bg-red-500"
                         }`}
-                        style={{ width: `${Math.min(100, Math.max(0, (daysLeft / 30) * 100))}%` }}
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(0, (daysLeft / (trialing ? 15 : 30)) * 100)
+                          )}%`,
+                        }}
                       />
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => goToPricing(navigate, location)}
-                    className="text-xs font-black uppercase tracking-widest text-yellow-700 hover:text-yellow-800"
-                  >
-                    Change plan →
-                  </button>
+                  <div className="pt-4 border-t border-gray-50 space-y-3">
+                    {(actionError || actionSuccess) && (
+                      <p className={`text-xs font-bold ${actionError ? "text-red-500" : "text-green-600"}`}>
+                        {actionError || actionSuccess}
+                      </p>
+                    )}
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4">
+                      <button
+                        type="button"
+                        onClick={() => goToPricing(navigate, location)}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-yellow-400 text-black border border-yellow-500 shadow-sm hover:bg-yellow-500 hover:shadow-md active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        Change plan
+                        <span aria-hidden="true" className="text-sm leading-none">
+                          →
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={actionLoading === "cancel"}
+                        onClick={openCancelModal}
+                        className="w-full sm:w-auto px-6 py-3 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        {actionLoading === "cancel" ? "Cancelling..." : "Cancel Subscription"}
+                      </button>
+                    </div>
+                  </div>
 
                 </div>
               ) : (
@@ -291,14 +601,14 @@ export default function Profile() {
                   <div className="space-y-2">
                     <h4 className="font-black text-gray-950">No Active Plan Connected</h4>
                     <p className="text-gray-400 font-bold text-xs max-w-sm mx-auto">
-                      Choose Starter, Growth, or Pro Elite to unlock campaigns, visits, and Business Coach.
+                      Start a 15-day Starter trial, or choose Growth / Pro Elite to unlock campaigns, visits, and Business Coach.
                     </p>
                   </div>
                   <button
                     onClick={() => goToPricing(navigate, location)}
                     className="px-8 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                   >
-                    View Pricing Plans
+                    {entitlements?.trialUsed ? "View Pricing Plans" : "Start free trial"}
                   </button>
                 </div>
               )}
@@ -330,6 +640,30 @@ export default function Profile() {
                   <p className="text-xs font-bold text-gray-400">No business profiles created yet.</p>
                 </div>
               )}
+            </div>
+
+            <div className="bg-white rounded-[2.5rem] border border-red-100 p-8 sm:p-10 shadow-sm space-y-6">
+              <div>
+                <span className="text-[10px] font-black uppercase text-red-500 tracking-widest block mb-1">Danger Zone</span>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Delete Account</h3>
+                <p className="text-xs font-bold text-gray-400 mt-2 leading-relaxed">
+                  Permanently delete your account, campaigns, and landing pages. This cannot be undone.
+                </p>
+              </div>
+              {(actionError || actionSuccess) && (
+                <p className={`text-xs font-bold ${actionError ? "text-red-500" : "text-green-600"}`}>
+                  {actionError || actionSuccess}
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={actionLoading === "delete"}
+                onClick={openDeleteModal}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <Trash2 size={14} />
+                {actionLoading === "delete" ? "Deleting..." : "Delete Account"}
+              </button>
             </div>
 
           </div>
@@ -411,5 +745,6 @@ export default function Profile() {
 
       </div>
     </div>
+    </>
   );
 }

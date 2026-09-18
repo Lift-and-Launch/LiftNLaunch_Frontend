@@ -1,8 +1,9 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { goToPricing } from '../utils/pricingNavigation';
+import { hasActiveSubscription } from '../utils/subscription';
 
 export default function CampaignReady() {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export default function CampaignReady() {
   const campaignId = location.state?.campaignId;
 
   const handleGenerate = () => {
-    if (user && !user.isSubscribed) {
+    if (user && !hasActiveSubscription(user)) {
       goToPricing(navigate, location);
     } else {
       navigate('/dashboard/campaign/builder', { state: location.state });
@@ -23,7 +24,7 @@ export default function CampaignReady() {
       navigate('/dashboard');
       return;
     }
-    if (user && !user.isSubscribed) {
+    if (user && !hasActiveSubscription(user)) {
       goToPricing(navigate, location);
       return;
     }
@@ -36,9 +37,12 @@ export default function CampaignReady() {
       <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end">
           <div className="flex items-center gap-4">
-            <button className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">
+            <Link
+              to="/contact"
+              className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+            >
               Get Support
-            </button>
+            </Link>
             <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white">
               {/* Profile icon placeholder */}
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

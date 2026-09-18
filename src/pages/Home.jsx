@@ -1,5 +1,6 @@
 import React from "react";
 import Hero from "../components/Hero";
+import FreeTrialOfferSection from "../components/FreeTrialOfferSection";
 import HowItWorks from "../components/HowItWorks";
 import SuccessStories from "../components/SuccessStories";
 import Testimonials from "../components/Testimonials";
@@ -29,6 +30,7 @@ export default function Home() {
         }}
       />
       <Hero />
+      <FreeTrialOfferSection />
       <HowItWorks />
       <SuccessStories />
       <Testimonials />

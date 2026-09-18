@@ -2,14 +2,22 @@ import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import OptimizedImage from "./OptimizedImage";
+import { useAuth } from "../context/AuthContext";
+import { hasActiveSubscription, isUserTrialing } from "../utils/subscription";
 
 const imagesLeftColumn = ["/images/hero-1.webp", "/images/hero-3.webp"];
 const imagesRightColumn = ["/images/hero-2.webp", "/images/hero-4.webp"];
 
 export default function Hero() {
+  const { user } = useAuth();
   const leftTextRef = useRef(null);
   const imagesRefs = useRef([]);
   imagesRefs.current = [];
+
+  const showTrialCta = !(user && (isUserTrialing(user) || hasActiveSubscription(user)));
+  const trialTo = user
+    ? "/pricing"
+    : { pathname: "/signup", state: { from: { pathname: "/pricing" } } };
 
   const addToImagesRefs = (el) => {
     if (el && !imagesRefs.current.includes(el)) {
@@ -88,19 +96,43 @@ export default function Hero() {
             Lift &amp; Launch Seed Ventures, and other major platforms.
           </p>
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-            <Link
-              to="/agency?consult=1"
-              className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 px-6 rounded-full text-sm text-center"
-            >
-              Chat With a Crowdfunding Expert
-            </Link>
-            <Link
-              to="/services"
-              className="inline-block border border-gray-300 hover:border-gray-900 text-gray-900 font-medium py-3 px-6 rounded-full text-sm text-center"
-            >
-              Explore the Platform
-            </Link>
+            {showTrialCta ? (
+              <>
+                <Link
+                  to={trialTo}
+                  className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 px-6 rounded-full text-sm text-center cursor-pointer"
+                >
+                  Start 15-day free trial
+                </Link>
+                <Link
+                  to="/agency?consult=1"
+                  className="inline-block border border-gray-300 hover:border-gray-900 text-gray-900 font-medium py-3 px-6 rounded-full text-sm text-center cursor-pointer"
+                >
+                  Chat With a Crowdfunding Expert
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/agency?consult=1"
+                  className="inline-block bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 px-6 rounded-full text-sm text-center cursor-pointer"
+                >
+                  Chat With a Crowdfunding Expert
+                </Link>
+                <Link
+                  to="/services"
+                  className="inline-block border border-gray-300 hover:border-gray-900 text-gray-900 font-medium py-3 px-6 rounded-full text-sm text-center cursor-pointer"
+                >
+                  Explore the Platform
+                </Link>
+              </>
+            )}
           </div>
+          {showTrialCta && (
+            <p className="mt-3 text-xs text-gray-500 font-semibold">
+              No charge for 15 days · Campaigns, Coach &amp; AI included on Starter
+            </p>
+          )}
         </div>
 
         <div className="flex w-full md:w-1/2 justify-center gap-3 sm:gap-4">

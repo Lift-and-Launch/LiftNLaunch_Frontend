@@ -5,6 +5,7 @@ import {
   readPendingOtpSession,
   isSuperAdmin,
 } from '../utils/roles';
+import { SUBSCRIPTION_REQUIRED_CODE } from '../utils/subscription';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://liftnlaunch-backend.onrender.com/api',
@@ -37,10 +38,11 @@ const readStoredUser = () => {
   return null;
 };
 
+// Attach auth token — never trust client-edited subscription flags for auth.
 api.interceptors.request.use(
   (config) => {
     const user = readStoredUser();
-    if (user?.token) {
+    if (user?.token && typeof user.token === 'string') {
       config.headers.Authorization = `Bearer ${user.token}`;
     }
     return config;
@@ -53,8 +55,11 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const data = error.response?.data;
+    const code = data?.code;
+    const message = String(data?.message || '').toLowerCase();
+    const path = window.location.pathname || '';
     const url = error.config?.url || '';
-    const onOtpPage = window.location.pathname.startsWith('/admin/verify-otp');
+    const onOtpPage = path.startsWith('/admin/verify-otp');
     const hasPendingOtp = Boolean(readPendingOtpSession());
     const skipAuthRedirect =
       url.includes('/auth/signin') ||
@@ -72,7 +77,25 @@ api.interceptors.response.use(
     if (status === 401 && !skipAuthRedirect && !onOtpPage && !hasPendingOtp) {
       localStorage.removeItem(USER_STORAGE_KEY);
       sessionStorage.removeItem(ADMIN_OTP_SESSION_KEY);
-      window.location.href = '/signin';
+      if (!path.startsWith('/signin') && !path.startsWith('/signup')) {
+        window.location.href = '/signin';
+      }
+      return Promise.reject(error);
+    }
+
+    // Server-enforced premium gate — bounce free users off AI/premium API usage.
+    const subscriptionBlocked =
+      status === 403 &&
+      (code === SUBSCRIPTION_REQUIRED_CODE ||
+        message.includes('premium subscription') ||
+        message.includes('subscription is required'));
+
+    if (
+      subscriptionBlocked &&
+      path.startsWith('/dashboard') &&
+      !path.startsWith('/pricing')
+    ) {
+      window.location.href = '/pricing';
     }
 
     return Promise.reject(error);

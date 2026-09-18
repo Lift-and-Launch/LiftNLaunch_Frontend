@@ -1207,30 +1207,22 @@ const RightPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Grid and Columns specific */}
-      {(selectedElementData.type === "grid" || selectedElementData.type === "columns") && (
+      {/* Grid specific */}
+      {selectedElementData.type === "grid" && (
         <div className="space-y-6">
           <div>
             <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
-              Number of Columns
+              Grid Columns
             </label>
             <input
               type="number"
               min="1"
               max="6"
-              value={
-                selectedElementData.styles.gridColumns ||
-                (selectedElementData.type === "grid" ? 3 : 2)
-              }
+              value={selectedElementData.styles.gridColumns || 3}
               onChange={(e) => {
-                const fallback =
-                  selectedElementData.type === "grid" ? 3 : 2;
-                const count = parseInt(e.target.value) || fallback;
+                const count = parseInt(e.target.value) || 3;
                 handleStyleChange("gridColumns", count);
-                const cellLabel =
-                  selectedElementData.type === "grid" ? "Cell" : "Column";
 
-                // Also adjust children if needed
                 const currentChildren = selectedElementData.children || [];
                 if (currentChildren.length < count) {
                   const newChildren = [...currentChildren];
@@ -1238,8 +1230,8 @@ const RightPanel: React.FC = () => {
                     newChildren.push({
                       id: crypto.randomUUID(),
                       type: "text",
-                      content: `<p>${cellLabel} ${i + 1}</p>`,
-                      styles: { padding: "16px", backgroundColor: "#e5e7eb", borderRadius: "4px" }
+                      content: `<p>Grid Cell ${i + 1}</p>`,
+                      styles: { padding: "16px", backgroundColor: "#e5e7eb", borderRadius: "4px", minHeight: "80px" }
                     });
                   }
                   updateElement(selectedElement, { children: newChildren });
@@ -1249,6 +1241,7 @@ const RightPanel: React.FC = () => {
               }}
               className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm font-medium bg-gray-50 focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 focus:bg-white transition-all"
             />
+            <p className="mt-2 text-[10px] font-bold text-gray-400">CSS grid that wraps cells into rows.</p>
           </div>
           <div>
             <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
@@ -1260,6 +1253,57 @@ const RightPanel: React.FC = () => {
               onChange={(e) => handleStyleChange("gap", e.target.value)}
               className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm font-medium bg-gray-50 focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 focus:bg-white transition-all"
               placeholder="e.g., 20px"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Columns specific — side-by-side flex row */}
+      {selectedElementData.type === "columns" && (
+        <div className="space-y-6">
+          <div>
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
+              Number of Columns
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="4"
+              value={selectedElementData.styles.gridColumns || selectedElementData.children?.length || 2}
+              onChange={(e) => {
+                const count = parseInt(e.target.value) || 2;
+                handleStyleChange("gridColumns", count);
+                
+                const currentChildren = selectedElementData.children || [];
+                if (currentChildren.length < count) {
+                  const newChildren = [...currentChildren];
+                  for (let i = currentChildren.length; i < count; i++) {
+                    newChildren.push({
+                      id: crypto.randomUUID(),
+                      type: "text",
+                      content: `<p>Column ${i + 1}</p>`,
+                      styles: { padding: "20px", backgroundColor: "#f3f4f6", borderRadius: "8px", flex: "1", minHeight: "120px" }
+                    });
+                  }
+                  updateElement(selectedElement, { children: newChildren });
+                } else if (currentChildren.length > count) {
+                  updateElement(selectedElement, { children: currentChildren.slice(0, count) });
+                }
+              }}
+              className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm font-medium bg-gray-50 focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 focus:bg-white transition-all"
+            />
+            <p className="mt-2 text-[10px] font-bold text-gray-400">Equal-width flex columns in a single row.</p>
+          </div>
+          <div>
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
+              Column Gap
+            </label>
+            <input
+              type="text"
+              value={selectedElementData.styles.gap || "24px"}
+              onChange={(e) => handleStyleChange("gap", e.target.value)}
+              className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm font-medium bg-gray-50 focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 focus:bg-white transition-all"
+              placeholder="e.g., 24px"
             />
           </div>
         </div>

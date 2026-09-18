@@ -73,9 +73,10 @@ const LeftPanel: React.FC = () => {
               type: "text" as const,
               content: `<p>${cellLabel} ${i + 1}</p>`,
               styles: {
-                padding: "16px",
-                backgroundColor: "#e5e7eb",
-                borderRadius: "4px",
+                padding: elementConfig.type === "grid" ? "16px" : "20px",
+                backgroundColor: elementConfig.type === "grid" ? "#e5e7eb" : "#f3f4f6",
+                borderRadius: elementConfig.type === "grid" ? "4px" : "8px",
+                ...(elementConfig.type === "columns" ? { flex: "1" } : {}),
                 minHeight: elementConfig.type === "grid" ? "80px" : "120px",
               },
             }))

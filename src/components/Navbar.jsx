@@ -1,8 +1,48 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, Sparkles, X } from 'lucide-react';
 import { useAuth } from "../context/AuthContext";
 import { isSuperAdmin } from "../utils/roles";
+import { canAccessPremiumFeatures, hasActiveSubscription } from "../utils/subscription";
+
+function BusinessCoachNavLabel({ compact = false, showPro = false }) {
+  return (
+    <span className="group/coach relative inline-flex flex-col items-center">
+      {/* “New” sits above the label so it reads as one control */}
+      <span
+        className={`absolute left-1/2 z-10 inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-400 text-black font-black uppercase tracking-wider whitespace-nowrap animate-[coachBadgePulse_1.6s_ease-in-out_infinite] ${
+          compact
+            ? '-top-2.5 px-1.5 py-px text-[8px]'
+            : '-top-3 px-1.5 py-px text-[9px]'
+        }`}
+      >
+        <Sparkles
+          size={compact ? 8 : 9}
+          className="shrink-0 animate-[coachSpark_1.2s_ease-in-out_infinite]"
+          aria-hidden
+        />
+        New
+      </span>
+
+      <span
+        className={`relative font-bold tracking-tight transition-all duration-300 ease-out animate-[coachTextGlow_2.4s_ease-in-out_infinite] group-hover/coach:scale-105 group-hover/coach:tracking-wide ${
+          compact ? 'text-sm pt-1.5' : 'text-[15px] pt-1'
+        } text-amber-600 group-hover/coach:text-yellow-500`}
+      >
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded-lg bg-yellow-300/0 blur-md transition-all duration-300 group-hover/coach:bg-yellow-300/45 group-hover/coach:blur-lg"
+        />
+        <span className="relative">Business Coach</span>
+        {showPro ? (
+          <span className="relative ml-1 text-[9px] font-black uppercase tracking-widest text-yellow-700/80 group-hover/coach:text-yellow-600">
+            Pro
+          </span>
+        ) : null}
+      </span>
+    </span>
+  );
+}
 
 export default function Navbar() {
   const { user, logout, needsAdminOtp } = useAuth();
@@ -71,6 +111,16 @@ export default function Navbar() {
             </div>
           </div>
 
+          {showAuthUser && (
+            <Link
+              to={canAccessPremiumFeatures(user) ? "/dashboard/coach" : "/pricing"}
+              className="relative inline-flex items-center px-1 py-1 -my-1 rounded-lg transition-transform duration-300 hover:-translate-y-0.5"
+            >
+              <BusinessCoachNavLabel
+                showPro={!hasActiveSubscription(user) && !canAccessPremiumFeatures(user)}
+              />
+            </Link>
+          )}
           <Link to="/contact" className="hover:text-yellow-500">Contact Us</Link>
 
           {/* Auth / Avatar */}
@@ -178,6 +228,17 @@ export default function Navbar() {
           <Link to="/blog" className="block pl-3" role="menuitem">Blogs</Link>
           <Link to="/contact" className="block" role="menuitem">Contact Us</Link>
 
+          {showAuthUser && (
+            <Link
+              to={canAccessPremiumFeatures(user) ? "/dashboard/coach" : "/pricing"}
+              className="block pt-2"
+              role="menuitem"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <BusinessCoachNavLabel compact />
+            </Link>
+          )}
+
           {!showAuthUser ? (
             <div className="pt-2 space-y-2">
               <Link to="/signup">
@@ -226,6 +287,32 @@ export default function Navbar() {
           )}
         </div>
       )}
+      <style>{`
+        @keyframes coachBadgePulse {
+          0%, 100% {
+            transform: translateX(-50%) scale(1);
+            box-shadow: 0 0 8px rgba(250,204,21,0.7), 0 0 16px rgba(251,191,36,0.35);
+          }
+          50% {
+            transform: translateX(-50%) scale(1.08);
+            box-shadow: 0 0 14px rgba(250,204,21,1), 0 0 28px rgba(251,191,36,0.65);
+          }
+        }
+        @keyframes coachTextGlow {
+          0%, 100% {
+            text-shadow: 0 0 6px rgba(250,204,21,0.4), 0 0 14px rgba(251,191,36,0.25);
+            filter: brightness(1);
+          }
+          50% {
+            text-shadow: 0 0 12px rgba(250,204,21,0.85), 0 0 26px rgba(251,191,36,0.5);
+            filter: brightness(1.08);
+          }
+        }
+        @keyframes coachSpark {
+          0%, 100% { transform: rotate(0deg) scale(1); opacity: 1; }
+          50% { transform: rotate(18deg) scale(1.15); opacity: 0.85; }
+        }
+      `}</style>
     </header>
   );
 }

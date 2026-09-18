@@ -128,9 +128,9 @@ const CampaignDetails = () => {
                   <Lightbulb size={25} className="text-gray-700" /> Key information
                 </h2>
                 <div className="flex items-center gap-4 text-sm text-blue-600">
-                  <a href="#" className="hover:underline flex items-center gap-1">
-                    <Globe size={16} /> Website
-                  </a>
+                  <Link to={`/live/${campaign.id}`} className="hover:underline flex items-center gap-1">
+                    <Globe size={16} /> Landing Page
+                  </Link>
                   <a href="#" className="hover:underline flex items-center gap-1">
                     <Building2 size={16} /> Companies House
                   </a>

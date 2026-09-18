@@ -3,9 +3,14 @@ import React, { Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import { useAuth } from "./context/AuthContext";
-import { isSuperAdmin } from "./utils/roles";
+import { isCoachRole, isSuperAdmin } from "./utils/roles";
 import { PRICING_RETURN_KEY } from "./utils/pricingNavigation";
-import ActivateFunnelBuilder from "./pages/ActivateFunnelBuilder";
+import {
+  canAccessPremiumFeatures,
+  hasActiveSubscription,
+  isUserTrialing,
+  premiumAccessRedirect,
+} from "./utils/subscription";
 
 // Lazy load pages for better performance
 const Home = React.lazy(() => import("./pages/Home"));
@@ -24,7 +29,7 @@ const Agency = React.lazy(() => import("./pages/Agency"));
 const ConsultationIntake = React.lazy(() => import("./pages/ConsultationIntake"));
 const Pricing = React.lazy(() => import("./pages/Pricing"));
 const PaymentSuccess = React.lazy(() => import("./pages/PaymentSuccess"));
-const ActivateFunnel = React.lazy(
+const ActivateFunnelBuilder = React.lazy(
   () => import("./pages/ActivateFunnelBuilder"),
 );
 const FunnelTool = React.lazy(() => import("./pages/FunnelTool"));
@@ -40,7 +45,6 @@ const BusinessRegistration = React.lazy(
 const CampaignConfiguration = React.lazy(
   () => import("./pages/CampaignConfiguration"),
 );
-const CampaignBuilder = React.lazy(() => import("./pages/CampaignBuilder"));
 const ReviewSubmitCampaign = React.lazy(() => import("./pages/ReviewSubmitCampaign"));
 const CampaignReady = React.lazy(() => import("./pages/CampaignReady"));
 const PublishCampaign = React.lazy(() => import("./pages/PublishCampaign"));
@@ -50,55 +54,98 @@ const StripeCallback = React.lazy(() => import("./pages/StripeCallback"));
 const PromoteCampaign = React.lazy(() => import("./pages/PromoteCampaign"));
 const CampaignAiAssistant = React.lazy(() => import("./pages/CampaignAiAssistant"));
 const Profile = React.lazy(() => import("./pages/Profile"));
+const CoachCases = React.lazy(() => import("./pages/coach/CoachCases"));
+const CoachCaseLayout = React.lazy(() => import("./pages/coach/CoachCaseLayout"));
+const CoachCaseHome = React.lazy(() => import("./pages/coach/CoachCaseHome"));
+const CoachIntake = React.lazy(() => import("./pages/coach/CoachIntake"));
+const CoachDiagnosis = React.lazy(() => import("./pages/coach/CoachDiagnosis"));
+const CoachPlan = React.lazy(() => import("./pages/coach/CoachPlan"));
+const CoachChat = React.lazy(() => import("./pages/coach/CoachChat"));
+const CoachDomains = React.lazy(() => import("./pages/coach/CoachDomains"));
+const CoachArtifact = React.lazy(() => import("./pages/coach/CoachArtifact"));
+const CoachWorkspace = React.lazy(() => import("./pages/coach/CoachWorkspace"));
+const CoachCaseload = React.lazy(() => import("./pages/coach/CoachCaseload"));
 
 // Website Builder Page
 const WebsiteBuilder = React.lazy(() => import("./pages/WebsiteBuilder"));
 
+const RouteLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="loader" />
+  </div>
+);
+
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <RouteLoader />;
   if (!user) return <Navigate to="/signin" replace />;
   return children;
 };
 
-const PriceGatedRoute = ({ children }) => {
+/** Paid + approved (or coach/superadmin). Blocks direct URL access to premium/AI tools. */
+const PremiumRoute = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  if (loading) return null;
+  if (loading) return <RouteLoader />;
   if (!user) return <Navigate to="/signin" replace />;
-  // replace so Back skips this gated page and returns to the screen the user came from
-  if (!user.isSubscribed) {
+
+  const redirect = premiumAccessRedirect(user);
+  if (redirect === "/pricing") {
     const returnTo = `${location.pathname}${location.search || ""}`;
     if (returnTo && !returnTo.includes("/pricing")) {
       sessionStorage.setItem(PRICING_RETURN_KEY, returnTo);
     }
-    return <Navigate to="/pricing" replace state={{ from: location }} />;
+    return (
+      <Navigate
+        to="/pricing"
+        replace
+        state={{ from: location.pathname, reason: "premium" }}
+      />
+    );
   }
-  if (user.adminApprovalStatus !== 'approved') {
-    return <Navigate to="/dashboard" replace />;
+  if (redirect) return <Navigate to={redirect} replace />;
+  if (!canAccessPremiumFeatures(user)) {
+    return <Navigate to="/pricing" replace />;
   }
   return children;
 };
 
+/** @deprecated Prefer PremiumRoute — kept for existing campaign builder paths. */
+const PriceGatedRoute = ({ children }) => (
+  <PremiumRoute>{children}</PremiumRoute>
+);
+
 const ApprovedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <RouteLoader />;
   if (!user) return <Navigate to="/signin" replace />;
-  if (user.isSubscribed && user.adminApprovalStatus !== 'approved') {
-    return <Navigate to="/dashboard" replace />;
+  if (isCoachRole(user.role) || isSuperAdmin(user.role)) return children;
+  if (!hasActiveSubscription(user)) {
+    const returnTo =
+      typeof window !== "undefined"
+        ? `${window.location.pathname}${window.location.search || ""}`
+        : "/dashboard";
+    if (returnTo && !returnTo.includes("/pricing")) {
+      sessionStorage.setItem(PRICING_RETURN_KEY, returnTo);
+    }
+    return <Navigate to="/pricing" replace />;
   }
-  return children;
+  // Trial users are auto-approved for campaign create / builder flows
+  if (isUserTrialing(user) || user.adminApprovalStatus === "approved") {
+    return children;
+  }
+  return <Navigate to="/dashboard" replace />;
 };
 
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/signin" />;
+  if (loading) return <RouteLoader />;
+  if (!user) return <Navigate to="/signin" replace />;
   if (isSuperAdmin(user.role) && !user.adminOtpVerified) {
     return <Navigate to="/admin/verify-otp" replace />;
   }
   if (!isSuperAdmin(user.role)) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/dashboard" replace />;
   }
   return children;
 };
@@ -256,21 +303,15 @@ const AppRoutes = () => {
           }
         />
 
-        {/* Website Builder Route */}
+        {/* Website Builder Route — premium only */}
         <Route
           path="/dashboard/website-builder"
           element={
-            // <PriceGatedRoute>
-            <WebsiteBuilder />
-            // </PriceGatedRoute>
+            <PremiumRoute>
+              <WebsiteBuilder />
+            </PremiumRoute>
           }
         />
-        {/* <Route
-          path="/dashboard/website-builder"
-          element={
-            <WebsiteBuilder />
-          }
-        /> */}
 
         {/* New SaaS Flow Routes */}
         <Route
@@ -383,6 +424,48 @@ const AppRoutes = () => {
             </ApprovedRoute>
           }
         />
+
+        {/* Business Coach */}
+        <Route
+          path="/dashboard/coach"
+          element={
+            <PremiumRoute>
+              <MainLayout>
+                <CoachCases />
+              </MainLayout>
+            </PremiumRoute>
+          }
+        />
+        <Route
+          path="/dashboard/coach/caseload"
+          element={
+            <PremiumRoute>
+              <MainLayout>
+                <CoachCaseload />
+              </MainLayout>
+            </PremiumRoute>
+          }
+        />
+        <Route
+          path="/dashboard/coach/cases/:caseId"
+          element={
+            <PremiumRoute>
+              <MainLayout>
+                <CoachCaseLayout />
+              </MainLayout>
+            </PremiumRoute>
+          }
+        >
+          <Route index element={<CoachCaseHome />} />
+          <Route path="intake" element={<CoachIntake />} />
+          <Route path="diagnosis" element={<CoachDiagnosis />} />
+          <Route path="plan" element={<CoachPlan />} />
+          <Route path="chat" element={<CoachChat />} />
+          <Route path="domains" element={<CoachDomains />} />
+          <Route path="workspace" element={<CoachWorkspace />} />
+          <Route path="artifacts/:artifactId" element={<CoachArtifact />} />
+        </Route>
+
         <Route
           path="/dashboard/profile"
           element={

@@ -59,7 +59,7 @@ export default function CreateCampaign() {
 
     if (!allowed) {
       toast.error(
-        entitlements?.isSubscribed
+        entitlements?.isSubscribed || entitlements?.isTrialing
           ? 'Campaign limit reached. Upgrade your plan to create more.'
           : 'An active plan is required to create campaigns.'
       );
@@ -99,9 +99,12 @@ export default function CreateCampaign() {
     <div className="min-h-screen bg-white">
       <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end">
-          <button className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">
+          <Link
+            to="/contact"
+            className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+          >
             Get Support
-          </button>
+          </Link>
         </div>
       </div>
 

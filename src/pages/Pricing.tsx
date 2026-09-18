@@ -5,7 +5,17 @@ import api from "../api/axios";
 import Seo from "../seo/Seo";
 import { pageSeo } from "../seo/seoConfig";
 import { useAuth } from "../context/AuthContext";
-import { SAAS_PRICING_TIERS } from "../utils/plans";
+import {
+  SAAS_PRICING_TIERS,
+  TRIAL_PERIOD_DAYS,
+  getPlanCheckoutCta,
+  shouldRequestStarterTrial,
+} from "../utils/plans";
+import {
+  fetchEntitlements,
+  handleCheckoutError,
+  isTrialing,
+} from "../utils/entitlements";
 import {
   PRICING_RETURN_KEY,
   getPricingReturnPath,
@@ -30,6 +40,9 @@ const checkIcon = (
 export default function Pricing() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [entitlements, setEntitlements] = useState<Record<string, unknown> | null>(
+    null
+  );
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -42,6 +55,25 @@ export default function Pricing() {
       sessionStorage.setItem(PRICING_RETURN_KEY, fromState);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (!user) {
+      setEntitlements(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchEntitlements();
+        if (!cancelled) setEntitlements(data);
+      } catch (err) {
+        console.warn("Could not load entitlements for pricing:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const handleBack = () => {
     const fromState = pathFromLocationLike(
@@ -61,9 +93,12 @@ export default function Pricing() {
 
     setLoadingPlan(planId);
     try {
-      const response = await api.post("/subscription/create-checkout-session", {
-        plan: planId,
-      });
+      const body: { plan: string; trial?: boolean } = { plan: planId };
+      if (planId === "starter" && shouldRequestStarterTrial(entitlements)) {
+        body.trial = true;
+      }
+
+      const response = await api.post("/subscription/create-checkout-session", body);
 
       if (response.data.success && response.data.url) {
         window.location.href = response.data.url;
@@ -72,12 +107,15 @@ export default function Pricing() {
       toast.error(response.data?.message || "Could not start checkout.");
     } catch (error: unknown) {
       console.error("Subscription Error:", error);
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Checkout failed. Please try again.");
+      handleCheckoutError(error);
     } finally {
       setLoadingPlan(null);
     }
   };
+
+  const alreadySubscribed = !!(
+    entitlements?.isSubscribed && !isTrialing(entitlements)
+  );
 
   return (
     <div className="w-full bg-white">
@@ -104,8 +142,17 @@ export default function Pricing() {
               Choose Your SaaS Plan
             </h1>
             <p className="text-gray-600 text-sm md:text-base max-w-xl mx-auto">
-              Campaigns, funnels &amp; Business Coach. 1.5% platform fee on Connect payments.
+              Start with a {TRIAL_PERIOD_DAYS}-day Starter trial, or go straight to Growth / Pro Elite.
+              Card on file at checkout · 1.5% Connect fee.
             </p>
+            {isTrialing(entitlements) && (
+              <p className="mt-3 inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-4 py-1.5 text-xs font-bold text-amber-900">
+                Free trial —{" "}
+                {typeof entitlements?.trialDaysRemaining === "number"
+                  ? `${entitlements.trialDaysRemaining} day${entitlements.trialDaysRemaining === 1 ? "" : "s"} left`
+                  : "active"}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col lg:flex-row items-stretch justify-center gap-5 lg:gap-6 pt-2">
@@ -113,6 +160,11 @@ export default function Pricing() {
               const isFeatured = tier.isFeatured;
               const isHovered = hovered === tier.id;
               const busy = loadingPlan === tier.id;
+              const cta = getPlanCheckoutCta(tier, entitlements);
+              const showTrialBadge =
+                tier.id === "starter" &&
+                tier.trialEligible &&
+                !entitlements?.trialUsed;
 
               return (
                 <div
@@ -137,6 +189,17 @@ export default function Pricing() {
                       </span>
                     </div>
                   )}
+                  {showTrialBadge && (
+                    <div
+                      className={`absolute z-20 ${
+                        tier.isPopular ? "top-3 right-3" : "-top-3 left-1/2 -translate-x-1/2"
+                      }`}
+                    >
+                      <span className="bg-amber-100 text-amber-900 border border-amber-200 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap">
+                        {TRIAL_PERIOD_DAYS}-day free trial
+                      </span>
+                    </div>
+                  )}
 
                   <div
                     className={`w-full rounded-t-2xl px-5 py-5 ${
@@ -156,6 +219,15 @@ export default function Pricing() {
                         / {tier.period}
                       </span>
                     </div>
+                    {tier.id === "starter" && showTrialBadge && (
+                      <p
+                        className={`mt-2 text-xs font-semibold ${
+                          isFeatured ? "text-black/70" : "text-gray-600"
+                        }`}
+                      >
+                        Then {tier.price}/{tier.period} · cancel anytime during trial
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-col flex-1 px-5 pt-4 pb-5 gap-3">
@@ -170,15 +242,25 @@ export default function Pricing() {
 
                     <button
                       type="button"
-                      disabled={!!loadingPlan}
+                      disabled={!!loadingPlan || alreadySubscribed}
                       onClick={() => handleGetStarted(tier.id)}
-                      className={`mt-3 w-full py-2.5 rounded-full text-sm font-semibold transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-wait ${
+                      className={`mt-3 w-full py-2.5 rounded-full text-sm font-semibold transition-all duration-200 disabled:opacity-60 ${
+                        busy
+                          ? "cursor-wait"
+                          : alreadySubscribed
+                            ? "cursor-not-allowed"
+                            : "cursor-pointer"
+                      } ${
                         isFeatured
                           ? "bg-gray-900 hover:bg-black text-white"
                           : "bg-yellow-400 hover:bg-yellow-500 text-black"
                       }`}
                     >
-                      {busy ? "Redirecting…" : "Get Started"}
+                      {busy
+                        ? "Redirecting…"
+                        : alreadySubscribed
+                          ? "Already subscribed"
+                          : cta}
                     </button>
                   </div>
                 </div>

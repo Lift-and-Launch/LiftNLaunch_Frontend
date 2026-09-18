@@ -40,7 +40,7 @@ export default function LiveWebsite() {
         const message =
           err.response?.data?.message ||
           (status === 404
-            ? "This landing page is not published yet, or no website content was saved for this campaign."
+            ? "This landing page is not published yet, or no website content was saved for this campaign. Make sure the campaign is published and the landing page was saved in the builder."
             : "Failed to load website details.");
         setError(message);
       } finally {

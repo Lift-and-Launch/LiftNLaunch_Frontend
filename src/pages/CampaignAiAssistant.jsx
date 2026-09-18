@@ -20,6 +20,7 @@ import api from '../api/axios';
 import { campaignAiApi, parseAiError, STEP_ROUTES } from '../api/campaignAi';
 import { useAuth } from '../context/AuthContext';
 import { goToPricing } from '../utils/pricingNavigation';
+import { canAccessPremiumFeatures } from '../utils/subscription';
 
 const TABS = [
   { id: 'suggestions', label: 'Suggestions', icon: Lightbulb },
@@ -272,7 +273,7 @@ export default function CampaignAiAssistant() {
     return latest.items.filter((item) => item.status === 'pending');
   }, [suggestionSets]);
 
-  if (user?.adminApprovalStatus && user.adminApprovalStatus !== 'approved') {
+  if (user && !canAccessPremiumFeatures(user)) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-6">
         <div className="max-w-2xl mx-auto bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 text-center space-y-4">

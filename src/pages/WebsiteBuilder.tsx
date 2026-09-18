@@ -17,6 +17,10 @@ import LeftPanel from "../components/layout/LeftPanel";
 import Canvas from "../components/canvas/Canvas";
 import RightPanel from "../components/layout/RightPanel";
 import BottomBar from "../components/layout/BottomBar";
+import {
+  canAccessPremiumFeatures,
+  hasActiveSubscription,
+} from "../utils/subscription";
 
 const WebsiteBuilder: React.FC = () => {
   const { user } = useAuth();
@@ -39,7 +43,7 @@ const WebsiteBuilder: React.FC = () => {
       navigate("/signin", { replace: true });
       return;
     }
-    if (!user.isSubscribed) {
+    if (!hasActiveSubscription(user)) {
       const returnTo = `${location.pathname}${location.search || ""}`;
       if (returnTo && !returnTo.includes("/pricing")) {
         sessionStorage.setItem("pricingReturnTo", returnTo);
@@ -47,7 +51,8 @@ const WebsiteBuilder: React.FC = () => {
       navigate("/pricing", { replace: true, state: { from: location } });
       return;
     }
-    if (user.isSubscribed && user.adminApprovalStatus !== "approved") {
+    // Trial users are auto-approved; paid users still need admin approval
+    if (!canAccessPremiumFeatures(user)) {
       navigate("/dashboard", { replace: true });
       return;
     }
