@@ -1,3 +1,4 @@
+/** Backend only defines `superadmin` as the admin role (see feat/admin-otp). */
 export const isSuperAdmin = (role) => role === 'superadmin';
 
 /** @deprecated Prefer isSuperAdmin — backend has no separate `admin` role. */
@@ -33,3 +34,7 @@ export const readPendingOtpSession = () => {
 
 export const hasPendingAdminOtp = (user) =>
   isPendingAdminSession(user) || isPendingAdminSession(readPendingOtpSession());
+
+/** Parse POST /admin/auth/otp/request response (payload nested under `data`). */
+export const parseOtpRequestPayload = (responseData) =>
+  responseData?.data ?? responseData ?? null;

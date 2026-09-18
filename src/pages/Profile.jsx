@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   User as UserIcon,
   Mail,
@@ -18,6 +18,9 @@ import {
   Ban,
 } from "lucide-react";
 import api from "../api/axios";
+import { goToPricing } from "../utils/pricingNavigation";
+import { fetchEntitlements } from "../utils/entitlements";
+import { formatPlanLabel, isUnlimitedCampaigns } from "../utils/plans";
 
 const btnBase =
   "cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
@@ -175,6 +178,7 @@ function ConfirmModal({
 export default function Profile() {
   const { user, refreshUser, loading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [refreshing, setRefreshing] = useState(false);
   const [businesses, setBusinesses] = useState([]);
   const [loadingBiz, setLoadingBiz] = useState(false);
@@ -186,11 +190,18 @@ export default function Profile() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [deleteTyped, setDeleteTyped] = useState("");
+  const [entitlements, setEntitlements] = useState(null);
 
   useEffect(() => {
     const init = async () => {
       setRefreshing(true);
       await refreshUser();
+      try {
+        const data = await fetchEntitlements();
+        setEntitlements(data);
+      } catch (err) {
+        console.error("Failed to load entitlements:", err);
+      }
       setRefreshing(false);
     };
     init();
@@ -313,10 +324,17 @@ export default function Profile() {
   }
 
   // Calculate remaining days
-  const isSubscribed = user.isSubscribed || user.subscription?.isSubscribed;
+  const isSubscribed =
+    entitlements?.isSubscribed ||
+    user.isSubscribed ||
+    user.subscription?.isSubscribed;
   const currentPeriodEnd = user.subscription?.currentPeriodEnd;
-  const planName = user.subscription?.plan || "Free";
-  const subStatus = user.subscription?.subscriptionStatus || "inactive";
+  const planKey = entitlements?.plan || user.subscription?.plan || "none";
+  const planName = formatPlanLabel(planKey);
+  const subStatus =
+    entitlements?.subscriptionStatus ||
+    user.subscription?.subscriptionStatus ||
+    "inactive";
 
   let daysLeft = 0;
   let formattedExpiry = "N/A";
@@ -332,17 +350,43 @@ export default function Profile() {
   }
 
   const getPlanBadgeStyles = (plan) => {
-    switch (plan?.toLowerCase()) {
-      case "gold":
-        return "bg-gradient-to-r from-amber-400 to-yellow-600 text-white shadow-yellow-250/30";
-      case "silver":
-        return "bg-gradient-to-r from-slate-400 to-slate-600 text-white shadow-slate-205/30";
-      case "bronze":
-        return "bg-gradient-to-r from-amber-600 to-orange-700 text-white shadow-orange-250/30";
+    switch (String(plan || "").toLowerCase()) {
+      case "pro_elite":
+        return "bg-gradient-to-r from-[#001d59] to-indigo-700 text-white";
+      case "growth":
+        return "bg-gradient-to-r from-yellow-400 to-amber-500 text-black";
+      case "starter":
+        return "bg-gradient-to-r from-slate-700 to-slate-900 text-white";
       default:
         return "bg-gray-100 text-gray-600";
     }
   };
+
+  const campaignsLabel = (() => {
+    if (!entitlements) return null;
+    if (isUnlimitedCampaigns(entitlements)) return "Unlimited campaigns";
+    const used = entitlements.usage?.campaignsUsed ?? 0;
+    const max = entitlements.maxCampaigns;
+    const remaining = entitlements.usage?.campaignsRemaining;
+    if (typeof remaining === "number" && typeof max === "number") {
+      return `${used} / ${max} campaigns used (${remaining} left)`;
+    }
+    if (typeof max === "number") return `${used} / ${max} campaigns used`;
+    return null;
+  })();
+
+  const visitsLabel = (() => {
+    if (!entitlements) return null;
+    const used = entitlements.usage?.visitsThisPeriod ?? 0;
+    const max = entitlements.maxVisitsPerMonth;
+    const remaining = entitlements.usage?.visitsRemaining;
+    if (typeof max === "number") {
+      return typeof remaining === "number"
+        ? `${used.toLocaleString()} / ${max.toLocaleString()} visits this period (${remaining.toLocaleString()} left)`
+        : `${used.toLocaleString()} / ${max.toLocaleString()} visits this period`;
+    }
+    return null;
+  })();
 
   return (
     <>
@@ -436,12 +480,11 @@ export default function Profile() {
               {isSubscribed ? (
                 <div className="space-y-6">
                   
-                  {/* Subscription card visual */}
-                  <div className={`p-6 rounded-3xl ${getPlanBadgeStyles(planName)} flex items-center justify-between shadow-lg relative overflow-hidden group`}>
+                  <div className={`p-6 rounded-3xl ${getPlanBadgeStyles(planKey)} flex items-center justify-between shadow-lg relative overflow-hidden group`}>
                     <div className="space-y-1 relative z-10">
                       <span className="text-[9px] font-black uppercase tracking-widest opacity-80">Active Plan</span>
-                      <h4 className="text-2xl font-black uppercase tracking-tight">{planName} Premium</h4>
-                      <p className="text-[10px] font-bold opacity-90">Auto-renews next cycle</p>
+                      <h4 className="text-2xl font-black uppercase tracking-tight">{planName}</h4>
+                      <p className="text-[10px] font-bold opacity-90">Auto-renews next cycle · 1.5% Connect fee</p>
                     </div>
                     <CreditCard size={48} className="opacity-15 absolute right-6 top-1/2 -translate-y-1/2" />
                   </div>
@@ -461,6 +504,24 @@ export default function Profile() {
                     </div>
                   </div>
 
+                  {(campaignsLabel || visitsLabel) && (
+                    <div className="space-y-3 pt-4 border-t border-gray-50">
+                      <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Usage</span>
+                      {campaignsLabel && (
+                        <p className="text-xs font-bold text-gray-800">{campaignsLabel}</p>
+                      )}
+                      {visitsLabel && (
+                        <p className="text-xs font-bold text-gray-800">{visitsLabel}</p>
+                      )}
+                      {entitlements?.features?.abTesting && (
+                        <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider">A/B testing included</p>
+                      )}
+                      {entitlements?.features?.businessCoach && (
+                        <p className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Business Coach included</p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Remaining days visualization bar */}
                   <div className="space-y-3 pt-4 border-t border-gray-50">
                     <div className="flex justify-between items-end">
@@ -478,9 +539,6 @@ export default function Profile() {
                         style={{ width: `${Math.min(100, Math.max(0, (daysLeft / 30) * 100))}%` }}
                       />
                     </div>
-                    <p className="text-[10px] font-bold text-gray-400 leading-relaxed">
-                      Your subscription gives you access to full drag-and-drop templates, custom domain mapping, split testing dashboards, and active ad campaign deployment.
-                    </p>
                   </div>
 
                   <div className="pt-4 border-t border-gray-50 space-y-3">
@@ -489,6 +547,13 @@ export default function Profile() {
                         {actionError || actionSuccess}
                       </p>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => goToPricing(navigate, location)}
+                      className="text-xs font-black uppercase tracking-widest text-yellow-700 hover:text-yellow-800"
+                    >
+                      Change plan →
+                    </button>
                     <button
                       type="button"
                       disabled={actionLoading === "cancel"}
@@ -508,11 +573,11 @@ export default function Profile() {
                   <div className="space-y-2">
                     <h4 className="font-black text-gray-950">No Active Plan Connected</h4>
                     <p className="text-gray-400 font-bold text-xs max-w-sm mx-auto">
-                      Upgrade to unlock custom domains, split tests, Google Ads OAuth, and advanced layout designs.
+                      Choose Starter, Growth, or Pro Elite to unlock campaigns, visits, and Business Coach.
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate("/pricing")}
+                    onClick={() => goToPricing(navigate, location)}
                     className="px-8 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                   >
                     View Pricing Plans

@@ -22,7 +22,7 @@ export default function PublishCampaign() {
 
   const [abTestingEnabled, setAbTestingEnabled] = useState(false);
   const [formData, setFormData] = useState({
-    slug: campaignId ? `${window.location.origin}/live/${campaignId}` : 'https://liftandlaunch.com/your-campaign-name',
+    slug: campaignId ? `${window.location.origin}/live/${campaignId}` : 'https://www.liftandlaunch.co/your-campaign-name',
     metaTitle: '',
     metaDescription: '',
     allowIndexing: true,
@@ -58,14 +58,38 @@ export default function PublishCampaign() {
         return;
       }
 
-      // Ensure a website document exists and latest builder content is persisted
+      // Make sure the latest website draft is on the server before going live
       try {
-        await api.get(`/websites/${campaignId}?v=A`);
-      } catch (websiteErr) {
-        console.warn("Website preload before publish failed:", websiteErr);
+        const webRes = await api.get(`/websites/${campaignId}?v=A`);
+        if (webRes.data?.success && webRes.data?.data) {
+          await api.put(`/websites/${campaignId}?v=A`, {
+            ...webRes.data.data,
+            isPublished: true,
+            publishedAt: new Date().toISOString(),
+          });
+        }
+        if (abTestingEnabled) {
+          const webResB = await api.get(`/websites/${campaignId}?v=B`);
+          if (webResB.data?.success && webResB.data?.data) {
+            await api.put(`/websites/${campaignId}?v=B`, {
+              ...webResB.data.data,
+              isPublished: true,
+              publishedAt: new Date().toISOString(),
+            });
+          }
+        }
+      } catch (webErr) {
+        console.warn("Could not mark website published before campaign publish:", webErr);
       }
       
-      const response = await api.put(`/campaigns/${campaignId}/publish`);
+      const response = await api.put(`/campaigns/${campaignId}/publish`, {
+        metaTitle: formData.metaTitle || undefined,
+        metaDescription: formData.metaDescription || undefined,
+        allowIndexing: formData.allowIndexing,
+        keepPrivate: formData.keepPrivate,
+        enableAnalytics: formData.enableAnalytics,
+        trackFormSubmissions: formData.trackFormSubmissions,
+      });
       if (response.data.success) {
         navigate('/dashboard/campaign/published-success', {
           state: {
@@ -191,7 +215,10 @@ export default function PublishCampaign() {
                   <input 
                     type="text" 
                     placeholder="Launch ABC - Smart solution for small Business"
+                    maxLength={60}
                     className="w-full px-6 py-4 rounded-xl border border-gray-200 bg-white font-bold"
+                    value={formData.metaTitle}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, metaTitle: e.target.value }))}
                   />
                 </div>
                 <div>
@@ -201,8 +228,11 @@ export default function PublishCampaign() {
                   </div>
                   <textarea 
                     rows={3}
+                    maxLength={160}
                     placeholder="Discover how XYZ helps small businesses grow faster. Join our campaign and be part of the launch."
                     className="w-full px-6 py-4 rounded-xl border border-gray-200 bg-white font-bold resize-none"
+                    value={formData.metaDescription}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, metaDescription: e.target.value }))}
                   />
                 </div>
              </div>
@@ -217,13 +247,23 @@ export default function PublishCampaign() {
                 </div>
                 <div className="space-y-4">
                   <label className="flex items-start gap-4 cursor-pointer group">
-                     <input type="checkbox" checked={formData.allowIndexing} className="mt-1 w-5 h-5 accent-yellow-500 rounded" />
+                     <input
+                       type="checkbox"
+                       checked={formData.allowIndexing}
+                       onChange={(e) => setFormData((prev) => ({ ...prev, allowIndexing: e.target.checked, keepPrivate: e.target.checked ? false : prev.keepPrivate }))}
+                       className="mt-1 w-5 h-5 accent-yellow-500 rounded cursor-pointer"
+                     />
                      <div className="flex flex-col">
                         <span className="text-sm font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">Allow Search Engines To Index This Page (Recommended)</span>
                      </div>
                   </label>
                   <label className="flex items-start gap-4 cursor-pointer group">
-                     <input type="checkbox" checked={formData.keepPrivate} className="mt-1 w-5 h-5 accent-yellow-500 rounded" />
+                     <input
+                       type="checkbox"
+                       checked={formData.keepPrivate}
+                       onChange={(e) => setFormData((prev) => ({ ...prev, keepPrivate: e.target.checked, allowIndexing: e.target.checked ? false : prev.allowIndexing }))}
+                       className="mt-1 w-5 h-5 accent-yellow-500 rounded cursor-pointer"
+                     />
                      <span className="text-sm font-bold text-gray-700 group-hover:text-yellow-600 transition-colors">Keep Private (Preview-Only)</span>
                   </label>
                 </div>
@@ -236,11 +276,21 @@ export default function PublishCampaign() {
                 </div>
                 <div className="space-y-4">
                   <label className="flex items-start gap-4 cursor-pointer group">
-                     <input type="checkbox" checked={formData.enableAnalytics} className="mt-1 w-5 h-5 accent-yellow-500 rounded" />
+                     <input
+                       type="checkbox"
+                       checked={formData.enableAnalytics}
+                       onChange={(e) => setFormData((prev) => ({ ...prev, enableAnalytics: e.target.checked }))}
+                       className="mt-1 w-5 h-5 accent-yellow-500 rounded cursor-pointer"
+                     />
                      <span className="text-sm font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">Enable Page Analytics</span>
                   </label>
                   <label className="flex items-start gap-4 cursor-pointer group">
-                     <input type="checkbox" checked={formData.trackFormSubmissions} className="mt-1 w-5 h-5 accent-yellow-500 rounded" />
+                     <input
+                       type="checkbox"
+                       checked={formData.trackFormSubmissions}
+                       onChange={(e) => setFormData((prev) => ({ ...prev, trackFormSubmissions: e.target.checked }))}
+                       className="mt-1 w-5 h-5 accent-yellow-500 rounded cursor-pointer"
+                     />
                      <span className="text-sm font-bold text-gray-700 group-hover:text-yellow-600 transition-colors">Track Form Submissions</span>
                   </label>
                 </div>

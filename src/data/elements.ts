@@ -14,7 +14,7 @@ export const structures: StructureCategory[] = [
         defaultContent: "",
         defaultStyles: {
           gridColumns: 3,
-          gap: "20px",
+          gap: "16px",
           padding: "20px",
           minHeight: "100px",
           backgroundColor: "#f9fafb",
@@ -31,11 +31,8 @@ export const structures: StructureCategory[] = [
           gap: "24px",
           padding: "20px",
           minHeight: "100px",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#f9fafb",
           borderRadius: "8px",
-          borderWidth: "1px",
-          borderStyle: "dashed",
-          borderColor: "#e5e7eb",
         },
       },
       {

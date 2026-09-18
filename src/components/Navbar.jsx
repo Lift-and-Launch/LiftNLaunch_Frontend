@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronDown, Menu, Sparkles, X } from 'lucide-react';
 import { useAuth } from "../context/AuthContext";
+import { isSuperAdmin } from "../utils/roles";
 import { canAccessPremiumFeatures, hasActiveSubscription } from "../utils/subscription";
 
 function BusinessCoachNavLabel({ compact = false, showPro = false }) {
@@ -44,7 +45,8 @@ function BusinessCoachNavLabel({ compact = false, showPro = false }) {
 }
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, needsAdminOtp } = useAuth();
+  const showAuthUser = user && !needsAdminOtp;
   const navigate = useNavigate();
 
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -77,7 +79,7 @@ export default function Navbar() {
         <Link to="/" className="flex items-center">
           <img
             src="/index/logo.webp"
-            alt="Lift and Lunch Logo"
+            alt="Lift & Launch"
             className="w-40 sm:w-48 md:w-56 lg:w-60 h-auto"
           />
         </Link>
@@ -85,30 +87,10 @@ export default function Navbar() {
         {/* Desktop Menu */}
         <nav className="hidden md:flex space-x-6 items-center relative">
           <Link to="/" className="hover:text-yellow-500">Home</Link>
-          <Link to="/process" className="hover:text-yellow-500">Our Process</Link>
+          <Link to="/campaigns" className="hover:text-yellow-500">Campaigns</Link>
+          <Link to="/services" className="hover:text-yellow-500">LaunchVault</Link>
 
-          {/* Explore Dropdown */}
-          <div
-            className="relative flex items-center space-x-1"
-            onMouseEnter={() => handleMouseEnter('results')}
-            onMouseLeave={handleMouseLeave}
-          >
-            <button className="flex items-center hover:text-yellow-500" type="button">
-              Results <ChevronDown className="w-4 h-4 ml-1" />
-            </button>
-            <div
-              className={`absolute top-full left-0 mt-2 py-2 w-40 z-50 bg-white shadow-md rounded transition-opacity duration-300 ${activeDropdown === 'results'
-                ? 'opacity-100 pointer-events-auto'
-                : 'opacity-0 pointer-events-none'
-                }`}
-            >
-              <Link to="#" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Review</Link>
-              <Link to="/campaigns" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Campaigns</Link>
-              <Link to="/blog" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Blogs</Link>
-            </div>
-          </div>
-
-          {/* Fundraise Dropdown */}
+          {/* About Us Dropdown */}
           <div
             className="relative flex items-center space-x-1"
             onMouseEnter={() => handleMouseEnter('about')}
@@ -123,14 +105,13 @@ export default function Navbar() {
                 : 'opacity-0 pointer-events-none'
                 }`}
             >
-              <Link to="#" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Team</Link>
-              <Link to="#" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Tech</Link>
-              <Link to="/faq" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">FAQs</Link>
+              <Link to="/agency" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Agency</Link>
+              <Link to="/faq" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">FAQ</Link>
+              <Link to="/blog" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Blogs</Link>
             </div>
           </div>
 
-          <Link to="/services" className="hover:text-yellow-500">Our Service</Link>
-          {user && (
+          {showAuthUser && (
             <Link
               to={canAccessPremiumFeatures(user) ? "/dashboard/coach" : "/pricing"}
               className="relative inline-flex items-center px-1 py-1 -my-1 rounded-lg transition-transform duration-300 hover:-translate-y-0.5"
@@ -144,7 +125,7 @@ export default function Navbar() {
 
           {/* Auth / Avatar */}
           <div className="ml-4 relative">
-            {!user ? (
+            {!showAuthUser ? (
               <div className="space-x-3">
                 <Link to="/signup">
                   <button className="bg-yellow-400 hover:bg-yellow-500 px-5 py-1 rounded-full text-sm border border-yellow-400 text-black" type="button">
@@ -186,7 +167,13 @@ export default function Navbar() {
                   role="menu"
                 >
                   <Link
-                    to={user?.role === 'superadmin' ? '/admin/dashboard' : '/dashboard'}
+                    to={
+                      isSuperAdmin(user?.role) && !user?.adminOtpVerified
+                        ? '/admin/verify-otp'
+                        : isSuperAdmin(user?.role)
+                          ? '/admin/dashboard'
+                          : '/dashboard'
+                    }
                     onClick={() => setActiveDropdown(null)}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
@@ -232,27 +219,16 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden px-4 pb-4 space-y-3 bg-white shadow" role="menu">
-          <Link to="#" className="block" role="menuitem">About</Link>
+          <Link to="/" className="block" role="menuitem">Home</Link>
+          <Link to="/campaigns" className="block" role="menuitem">Campaigns</Link>
+          <Link to="/services" className="block" role="menuitem">LaunchVault</Link>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 pt-1">About Us</p>
+          <Link to="/agency" className="block pl-3" role="menuitem">Agency</Link>
+          <Link to="/faq" className="block pl-3" role="menuitem">FAQ</Link>
+          <Link to="/blog" className="block pl-3" role="menuitem">Blogs</Link>
+          <Link to="/contact" className="block" role="menuitem">Contact Us</Link>
 
-          <div>
-            <p className="font-semibold text-gray-700">Explore</p>
-            <div className="ml-3 space-y-1">
-              <Link to="/campaigns" className="block" role="menuitem">All Campaigns</Link>
-              <Link to="#" className="block" role="menuitem">Categories</Link>
-              <Link to="#" className="block" role="menuitem">Success Stories</Link>
-            </div>
-          </div>
-
-          <div>
-            <p className="font-semibold text-gray-700">Fundraise</p>
-            <div className="ml-3 space-y-1">
-              <Link to="#" className="block" role="menuitem">Start Campaign</Link>
-              <Link to="/process" className="block" role="menuitem">How It Works</Link>
-            </div>
-          </div>
-
-          <Link to="/faq" className="block" role="menuitem">Help Center</Link>
-          {user && (
+          {showAuthUser && (
             <Link
               to={canAccessPremiumFeatures(user) ? "/dashboard/coach" : "/pricing"}
               className="block pt-2"
@@ -263,7 +239,7 @@ export default function Navbar() {
             </Link>
           )}
 
-          {!user ? (
+          {!showAuthUser ? (
             <div className="pt-2 space-y-2">
               <Link to="/signup">
                 <button className="block w-full bg-yellow-400 hover:bg-yellow-500 px-5 py-2 rounded-full text-sm" type="button">

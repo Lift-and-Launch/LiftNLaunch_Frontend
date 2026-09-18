@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /signin
+Disallow: /signup
+Disallow: /admin
+Disallow: /stripe-callback
+Disallow: /payment-success
+
+Sitemap: https://www.liftandlaunch.co/sitemap.xml

@@ -2,16 +2,30 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 
 import api from '../api/axios';
 import {
-  isAdminRole,
-  USER_STORAGE_KEY,
-  readPendingOtpSession,
+  isSuperAdmin,
   isPendingAdminSession,
+  hasPendingAdminOtp,
+  parseOtpRequestPayload,
+  USER_STORAGE_KEY,
+  ADMIN_OTP_SESSION_KEY,
+  readPendingOtpSession,
 } from '../utils/roles';
 
 const AuthContext = createContext();
 
-const persistSession = (userData) => {
+const persistVerifiedSession = (userData) => {
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+  sessionStorage.removeItem(ADMIN_OTP_SESSION_KEY);
+};
+
+const persistPendingOtpSession = (userData) => {
+  sessionStorage.setItem(ADMIN_OTP_SESSION_KEY, JSON.stringify(userData));
+  localStorage.removeItem(USER_STORAGE_KEY);
+};
+
+const clearAllSessions = () => {
+  localStorage.removeItem(USER_STORAGE_KEY);
+  sessionStorage.removeItem(ADMIN_OTP_SESSION_KEY);
 };
 
 const buildSession = (payload, extras = {}) => ({
@@ -21,9 +35,28 @@ const buildSession = (payload, extras = {}) => ({
   ...extras,
 });
 
+/** Merge /auth/me payload — server is source of truth for entitlement & coach fields. */
+const mergeApiUser = (existing, apiUser, tokenExtras = {}) => {
+  const subscribed =
+    apiUser.isSubscribed ?? apiUser.subscription?.isSubscribed ?? existing.isSubscribed ?? false;
+  return {
+    ...existing,
+    ...apiUser,
+    isSubscribed: Boolean(subscribed),
+    subscription: apiUser.subscription || existing.subscription || null,
+    adminApprovalStatus: apiUser.adminApprovalStatus ?? existing.adminApprovalStatus,
+    ...tokenExtras,
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const cancelAdminOtp = useCallback(() => {
+    setUser(null);
+    clearAllSessions();
+  }, []);
 
   const restorePendingOtp = useCallback(() => {
     const pending = readPendingOtpSession();
@@ -36,6 +69,13 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
+      const pending = readPendingOtpSession();
+      if (pending && isPendingAdminSession(pending)) {
+        setUser(pending);
+        setLoading(false);
+        return;
+      }
+
       const savedUser = localStorage.getItem(USER_STORAGE_KEY);
       if (!savedUser) {
         setLoading(false);
@@ -45,45 +85,28 @@ export const AuthProvider = ({ children }) => {
       try {
         const userData = JSON.parse(savedUser);
 
-        if (userData.otpRequired || (isAdminRole(userData.role) && !userData.adminOtpVerified)) {
-          const pending = { ...userData, otpRequired: true, adminOtpVerified: false };
-          setUser(pending);
-          persistSession(pending);
+        if (isPendingAdminSession(userData)) {
+          clearAllSessions();
           setLoading(false);
           return;
         }
 
         const response = await api.get('/auth/me');
         if (response.data.success) {
-          const apiUser = response.data.user || {};
-          const subscribed =
-            apiUser.isSubscribed ?? apiUser.subscription?.isSubscribed ?? false;
-          const merged = {
-            ...userData,
-            ...apiUser,
-            isSubscribed: Boolean(subscribed),
-            subscription: apiUser.subscription || null,
-            token: userData.token,
-          };
-          if (isAdminRole(merged.role) && !userData.adminOtpVerified) {
-            setUser({ ...merged, otpRequired: true, adminOtpVerified: false });
-          } else {
-            setUser({
-              ...merged,
+          setUser(
+            mergeApiUser(userData, response.data.user || {}, {
+              token: userData.token,
               otpRequired: false,
-              adminOtpVerified: userData.adminOtpVerified || !isAdminRole(merged.role),
-            });
-          }
+              adminOtpVerified: true,
+            })
+          );
         } else {
-          localStorage.removeItem(USER_STORAGE_KEY);
+          clearAllSessions();
         }
       } catch (error) {
-        if (error.response?.data?.otpRequired) {
-          const userData = JSON.parse(savedUser);
-          setUser({ ...userData, otpRequired: true });
-        } else {
+        if (!readPendingOtpSession()) {
           console.error('Auth verification failed:', error);
-          localStorage.removeItem(USER_STORAGE_KEY);
+          clearAllSessions();
         }
       }
       setLoading(false);
@@ -97,7 +120,8 @@ export const AuthProvider = ({ children }) => {
       const data = response.data;
       const role = data.user?.role;
 
-      if (data.otpRequired || isAdminRole(role)) {
+      // Backend feat/admin-otp: only superadmin sign-in returns otpRequired + pending JWT
+      if (data.otpRequired) {
         const userData = buildSession(data, {
           otpRequired: true,
           adminOtpVerified: false,
@@ -107,18 +131,19 @@ export const AuthProvider = ({ children }) => {
           console.info('[admin otp][dev only]', data.devOtp);
         }
         setUser(userData);
-        persistSession(userData);
+        persistPendingOtpSession(userData);
 
         if (!userData.challengeId && userData.token) {
           try {
             const otpRes = await api.post('/admin/auth/otp/request', {});
-            if (otpRes.data?.challengeId) {
-              userData.challengeId = otpRes.data.challengeId;
-              if (import.meta.env.DEV && otpRes.data.devOtp) {
-                console.info('[admin otp][dev only]', otpRes.data.devOtp);
+            const otpPayload = parseOtpRequestPayload(otpRes.data);
+            if (otpPayload?.challengeId) {
+              userData.challengeId = String(otpPayload.challengeId);
+              if (import.meta.env.DEV && otpPayload.devOtp) {
+                console.info('[admin otp][dev only]', otpPayload.devOtp);
               }
               setUser({ ...userData });
-              persistSession(userData);
+              persistPendingOtpSession(userData);
             }
           } catch (otpError) {
             console.error('Admin OTP request failed:', otpError);
@@ -128,14 +153,21 @@ export const AuthProvider = ({ children }) => {
         return { success: true, otpRequired: true };
       }
 
+      if (isSuperAdmin(role)) {
+        return {
+          success: false,
+          message: 'Superadmin login requires OTP verification. Please try again.',
+        };
+      }
+
       if (data.success) {
         const userData = buildSession(data, {
           otpRequired: false,
-          adminOtpVerified: false,
+          adminOtpVerified: true,
           challengeId: null,
         });
         setUser(userData);
-        persistSession(userData);
+        persistVerifiedSession(userData);
         return { success: true };
       }
 
@@ -147,7 +179,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const verifyAdminOtp = async (code) => {
-    const stored = user || JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || 'null');
+    const stored = user || readPendingOtpSession();
     if (!stored?.token || !stored?.challengeId) {
       return { success: false, message: 'No admin verification is pending. Sign in again.' };
     }
@@ -164,8 +196,8 @@ export const AuthProvider = ({ children }) => {
       });
       const data = response.data;
 
-      if (data.token) {
-        const userData = {
+      if (data.success && data.token) {
+        let userData = {
           ...stored,
           ...(data.user || {}),
           token: data.token,
@@ -174,8 +206,23 @@ export const AuthProvider = ({ children }) => {
           challengeId: null,
           isSubscribed: data.user?.isSubscribed ?? stored.isSubscribed,
         };
+
+        try {
+          const meRes = await api.get('/auth/me');
+          if (meRes.data.success && meRes.data.user) {
+            userData = mergeApiUser(userData, meRes.data.user, {
+              token: data.token,
+              otpRequired: false,
+              adminOtpVerified: true,
+              challengeId: null,
+            });
+          }
+        } catch (meError) {
+          console.warn('Could not refresh profile after OTP verify:', meError);
+        }
+
         setUser(userData);
-        persistSession(userData);
+        persistVerifiedSession(userData);
         return { success: true };
       }
 
@@ -189,30 +236,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   const resendAdminOtp = async () => {
-    const stored = user || JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || 'null');
+    const stored = user || readPendingOtpSession();
     if (!stored?.token) {
       return { success: false, message: 'No admin verification is pending. Sign in again.' };
     }
 
     try {
       const response = await api.post('/admin/auth/otp/request', {});
-      const data = response.data;
+      const payload = parseOtpRequestPayload(response.data);
 
-      if (data.challengeId) {
+      if (payload?.challengeId) {
         const updated = {
           ...stored,
-          challengeId: data.challengeId,
+          challengeId: String(payload.challengeId),
           otpRequired: true,
+          adminOtpVerified: false,
         };
-        if (import.meta.env.DEV && data.devOtp) {
-          console.info('[admin otp][dev only]', data.devOtp);
+        if (import.meta.env.DEV && payload.devOtp) {
+          console.info('[admin otp][dev only]', payload.devOtp);
         }
         setUser(updated);
-        persistSession(updated);
+        persistPendingOtpSession(updated);
         return { success: true };
       }
 
-      return { success: false, message: data.message || 'Could not resend the code.' };
+      return { success: false, message: response.data?.message || 'Could not resend the code.' };
     } catch (error) {
       return {
         success: false,
@@ -239,58 +287,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const subscribe = async (plan = 'silver') => {
+  const subscribe = async (plan = 'starter') => {
     if (!user) return false;
+    if (isSuperAdmin(user.role) && !user.adminOtpVerified) return false;
+
+    // Manual activate — admin/dev only. Self-serve users should use Stripe Checkout.
     try {
       const response = await api.post('/subscription/activate', { plan });
       if (response.data.success) {
-        const apiUser = response.data.user || {};
-        const updatedUser = {
-          ...user,
-          ...apiUser,
-          isSubscribed: true,
-          adminApprovalStatus:
-            apiUser.adminApprovalStatus || user.adminApprovalStatus || 'pending',
-          subscription: {
-            ...(user.subscription || {}),
-            isSubscribed: true,
-            plan: plan || user.subscription?.plan || 'silver',
-            subscriptionStatus: 'active',
-          },
-        };
-        setUser(updatedUser);
-        persistSession(updatedUser);
+        await refreshUser();
         return true;
       }
-      return false;
     } catch (error) {
       console.error('Failed to activate subscription on server:', error);
-      // Never spoof premium access locally if the API rejects activation.
-      return false;
     }
+    return false;
   };
 
   const refreshUser = async () => {
+    if (isPendingAdminSession(user)) return null;
+
     try {
       const response = await api.get('/auth/me');
       if (response.data.success) {
         const savedUser = localStorage.getItem(USER_STORAGE_KEY);
         const userData = savedUser ? JSON.parse(savedUser) : {};
-        const apiUser = response.data.user || {};
-        const subscribed =
-          apiUser.isSubscribed ?? apiUser.subscription?.isSubscribed ?? false;
-        const updatedUser = {
-          ...userData,
-          ...apiUser,
-          // Server is source of truth for entitlement — ignore local spoofing.
-          isSubscribed: Boolean(subscribed),
-          subscription: apiUser.subscription || userData.subscription || null,
+        const updatedUser = mergeApiUser(userData, response.data.user || {}, {
           token: userData.token,
-          otpRequired: user?.otpRequired || false,
-          adminOtpVerified: user?.adminOtpVerified || false,
-        };
+          otpRequired: false,
+          adminOtpVerified: true,
+        });
         setUser(updatedUser);
-        persistSession(updatedUser);
+        persistVerifiedSession(updatedUser);
         return updatedUser;
       }
     } catch (error) {
@@ -301,12 +329,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem(USER_STORAGE_KEY);
+    clearAllSessions();
   };
 
-  const needsAdminOtp = Boolean(
-    isAdminRole(user?.role) && !user?.adminOtpVerified,
-  );
+  const needsAdminOtp = hasPendingAdminOtp(user);
 
   return (
     <AuthContext.Provider
@@ -321,6 +347,7 @@ export const AuthProvider = ({ children }) => {
         needsAdminOtp,
         verifyAdminOtp,
         resendAdminOtp,
+        cancelAdminOtp,
         restorePendingOtp,
       }}
     >

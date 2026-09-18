@@ -3,8 +3,8 @@ import React, { Suspense } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import { useAuth } from "./context/AuthContext";
-import ActivateFunnelBuilder from "./pages/ActivateFunnelBuilder";
 import { isCoachRole, isSuperAdmin } from "./utils/roles";
+import { PRICING_RETURN_KEY } from "./utils/pricingNavigation";
 import {
   canAccessPremiumFeatures,
   hasActiveSubscription,
@@ -24,9 +24,11 @@ const SignIn = React.lazy(() => import("./pages/SignIn"));
 const SignUp = React.lazy(() => import("./pages/SignUp"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 const Process = React.lazy(() => import("./pages/Process"));
+const Agency = React.lazy(() => import("./pages/Agency"));
+const ConsultationIntake = React.lazy(() => import("./pages/ConsultationIntake"));
 const Pricing = React.lazy(() => import("./pages/Pricing"));
 const PaymentSuccess = React.lazy(() => import("./pages/PaymentSuccess"));
-const ActivateFunnel = React.lazy(
+const ActivateFunnelBuilder = React.lazy(
   () => import("./pages/ActivateFunnelBuilder"),
 );
 const FunnelTool = React.lazy(() => import("./pages/FunnelTool"));
@@ -42,7 +44,6 @@ const BusinessRegistration = React.lazy(
 const CampaignConfiguration = React.lazy(
   () => import("./pages/CampaignConfiguration"),
 );
-const CampaignBuilder = React.lazy(() => import("./pages/CampaignBuilder"));
 const ReviewSubmitCampaign = React.lazy(() => import("./pages/ReviewSubmitCampaign"));
 const CampaignReady = React.lazy(() => import("./pages/CampaignReady"));
 const PublishCampaign = React.lazy(() => import("./pages/PublishCampaign"));
@@ -50,6 +51,7 @@ const CampaignPublishedSuccess = React.lazy(() => import("./pages/CampaignPublis
 const LiveWebsite = React.lazy(() => import("./pages/LiveWebsite"));
 const StripeCallback = React.lazy(() => import("./pages/StripeCallback"));
 const PromoteCampaign = React.lazy(() => import("./pages/PromoteCampaign"));
+const CampaignAiAssistant = React.lazy(() => import("./pages/CampaignAiAssistant"));
 const Profile = React.lazy(() => import("./pages/Profile"));
 const CoachCases = React.lazy(() => import("./pages/coach/CoachCases"));
 const CoachCaseLayout = React.lazy(() => import("./pages/coach/CoachCaseLayout"));
@@ -88,6 +90,10 @@ const PremiumRoute = ({ children }) => {
 
   const redirect = premiumAccessRedirect(user);
   if (redirect === "/pricing") {
+    const returnTo = `${location.pathname}${location.search || ""}`;
+    if (returnTo && !returnTo.includes("/pricing")) {
+      sessionStorage.setItem(PRICING_RETURN_KEY, returnTo);
+    }
     return (
       <Navigate
         to="/pricing"
@@ -114,6 +120,13 @@ const ApprovedRoute = ({ children }) => {
   if (!user) return <Navigate to="/signin" replace />;
   if (isCoachRole(user.role) || isSuperAdmin(user.role)) return children;
   if (!hasActiveSubscription(user)) {
+    const returnTo =
+      typeof window !== "undefined"
+        ? `${window.location.pathname}${window.location.search || ""}`
+        : "/dashboard";
+    if (returnTo && !returnTo.includes("/pricing")) {
+      sessionStorage.setItem(PRICING_RETURN_KEY, returnTo);
+    }
     return <Navigate to="/pricing" replace />;
   }
   if (user.adminApprovalStatus !== "approved") {
@@ -126,7 +139,10 @@ const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <RouteLoader />;
   if (!user) return <Navigate to="/signin" replace />;
-  if (user.role !== "admin" && user.role !== "superadmin") {
+  if (isSuperAdmin(user.role) && !user.adminOtpVerified) {
+    return <Navigate to="/admin/verify-otp" replace />;
+  }
+  if (!isSuperAdmin(user.role)) {
     return <Navigate to="/dashboard" replace />;
   }
   return children;
@@ -135,6 +151,7 @@ const AdminRoute = ({ children }) => {
 const AdminDashboardView = React.lazy(
   () => import("./components/AdminDashboardView"),
 );
+const AdminOtpVerify = React.lazy(() => import("./pages/AdminOtpVerify"));
 
 const AppRoutes = () => {
   return (
@@ -216,6 +233,22 @@ const AppRoutes = () => {
           element={
             <MainLayout>
               <Process />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/agency"
+          element={
+            <MainLayout>
+              <Agency />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/consultation-intake"
+          element={
+            <MainLayout>
+              <ConsultationIntake />
             </MainLayout>
           }
         />
@@ -379,7 +412,18 @@ const AppRoutes = () => {
             </ApprovedRoute>
           }
         />
+        <Route
+          path="/dashboard/campaign/:id/ai"
+          element={
+            <ApprovedRoute>
+              <MainLayout>
+                <CampaignAiAssistant />
+              </MainLayout>
+            </ApprovedRoute>
+          }
+        />
 
+        {/* Business Coach */}
         <Route
           path="/dashboard/coach"
           element={
@@ -450,6 +494,9 @@ const AppRoutes = () => {
             </PriceGatedRoute>
           }
         />
+
+        {/* Admin OTP (pending token — must sit above /admin/*) */}
+        <Route path="/admin/verify-otp" element={<AdminOtpVerify />} />
 
         {/* Admin Routes */}
         <Route

@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ChevronDown, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../api/axios';
+import { sanitizeBusinessText } from '../utils/formInput';
+import { fetchEntitlements, handlePlanGateError } from '../utils/entitlements';
+import { canCreateCampaign, isUnlimitedCampaigns } from '../utils/plans';
+import { goToPricing } from '../utils/pricingNavigation';
 
 export default function CreateCampaign() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [campaignName, setCampaignName] = useState('');
   const [businessProfile, setBusinessProfile] = useState('');
   const [businessProfiles, setBusinessProfiles] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [entitlements, setEntitlements] = useState(null);
+  const [loadingEntitlements, setLoadingEntitlements] = useState(true);
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -25,35 +33,63 @@ export default function CreateCampaign() {
     fetchProfiles();
   }, []);
 
+  useEffect(() => {
+    const loadEntitlements = async () => {
+      setLoadingEntitlements(true);
+      try {
+        const data = await fetchEntitlements();
+        setEntitlements(data);
+      } catch (err) {
+        console.error('Failed to load entitlements:', err);
+      } finally {
+        setLoadingEntitlements(false);
+      }
+    };
+    loadEntitlements();
+  }, []);
+
   const selectedBusiness = businessProfiles.find(b => b.id === businessProfile);
+  const allowed = canCreateCampaign(entitlements);
+  const remaining = entitlements?.usage?.campaignsRemaining;
+  const unlimited = isUnlimitedCampaigns(entitlements);
 
   const handleContinue = async (e) => {
     e.preventDefault();
     if (!campaignName.trim() || !businessProfile) return;
-    
+
+    if (!allowed) {
+      toast.error(
+        entitlements?.isSubscribed
+          ? 'Campaign limit reached. Upgrade your plan to create more.'
+          : 'An active plan is required to create campaigns.'
+      );
+      goToPricing(navigate, location);
+      return;
+    }
+
     setLoading(true);
     try {
-      // If "new" is selected, we pass null as businessProfileId to backend
       const businessId = businessProfile === 'new' ? null : businessProfile;
-      
+
       const response = await api.post('/campaigns/create', {
         campaignName: campaignName.trim(),
         businessProfileId: businessId
       });
 
       if (response.data.success) {
-        // Pass the collected data forward to the Campaign Type Selection step
         navigate('/dashboard/campaign/select-type', {
-          state: { 
+          state: {
             campaignId: response.data.data.campaignId,
-            campaignName: campaignName.trim(), 
-            hasBusinessInfo: response.data.data.hasBusinessInfo 
+            campaignName: campaignName.trim(),
+            hasBusinessInfo: response.data.data.hasBusinessInfo
           },
         });
       }
     } catch (error) {
       console.error('Error creating campaign:', error);
-      alert(error.response?.data?.message || 'Failed to create campaign');
+      if (!handlePlanGateError(error, { navigate, location })) {
+        toast.error(error.response?.data?.message || 'Failed to create campaign');
+      }
     } finally {
       setLoading(false);
     }
@@ -61,7 +97,6 @@ export default function CreateCampaign() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Top bar */}
       <div className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end">
           <button className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">
@@ -70,7 +105,6 @@ export default function CreateCampaign() {
         </div>
       </div>
 
-      {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-6 pt-6">
         <nav className="flex items-center gap-2 text-sm font-medium text-gray-400">
           <Link to="/dashboard" className="hover:text-gray-700 transition-colors">
@@ -81,9 +115,7 @@ export default function CreateCampaign() {
         </nav>
       </div>
 
-      {/* Page content */}
       <div className="max-w-7xl mx-auto px-6 py-16 flex flex-col items-center">
-        {/* Heading */}
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-3">
             Create New Campaign
@@ -91,12 +123,38 @@ export default function CreateCampaign() {
           <p className="text-gray-400 font-medium text-base">
             Set up a campaign to launch, test, or fund your business idea.
           </p>
+          {!loadingEntitlements && entitlements && (
+            <p className="mt-3 text-sm font-semibold text-gray-600">
+              {unlimited
+                ? 'Unlimited campaigns on your plan'
+                : typeof remaining === 'number'
+                  ? `${remaining} campaign${remaining === 1 ? '' : 's'} remaining on your plan`
+                  : entitlements.isSubscribed
+                    ? 'Check your plan limits on Profile'
+                    : 'Subscribe to create campaigns'}
+            </p>
+          )}
         </div>
 
-        {/* Card */}
+        {!loadingEntitlements && !allowed && (
+          <div className="w-full max-w-lg mb-6 rounded-2xl border border-amber-200 bg-yellow-50 p-5 text-center">
+            <p className="text-sm font-semibold text-gray-800 mb-3">
+              {entitlements?.isSubscribed
+                ? "You've hit your campaign limit for this plan."
+                : 'An active SaaS plan is required to create campaigns.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => goToPricing(navigate, location)}
+              className="px-6 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-black text-sm font-bold rounded-full"
+            >
+              Upgrade Plan
+            </button>
+          </div>
+        )}
+
         <div className="w-full max-w-lg bg-gray-50 border border-gray-200 rounded-2xl p-8 shadow-sm">
           <form onSubmit={handleContinue} className="space-y-6">
-            {/* Campaign Name */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Campaign Name
@@ -104,15 +162,16 @@ export default function CreateCampaign() {
               <input
                 id="campaign-name"
                 type="text"
+                maxLength={120}
                 placeholder="Enter your campaign name"
                 value={campaignName}
-                onChange={e => setCampaignName(e.target.value)}
+                onChange={e => setCampaignName(sanitizeBusinessText(e.target.value))}
                 required
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 transition-all text-gray-800 font-medium placeholder-gray-300 text-sm"
+                disabled={!allowed && !loadingEntitlements}
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white outline-none focus:ring-2 focus:ring-yellow-400/50 focus:border-yellow-400 transition-all text-gray-800 font-medium placeholder-gray-300 text-sm disabled:opacity-60"
               />
             </div>
 
-            {/* Business Profile */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Business Profile
@@ -122,7 +181,8 @@ export default function CreateCampaign() {
                   type="button"
                   id="business-profile-select"
                   onClick={() => setDropdownOpen(prev => !prev)}
-                  className={`w-full px-4 py-3 rounded-lg border bg-white outline-none text-left text-sm font-medium transition-all flex items-center justify-between ${
+                  disabled={!allowed && !loadingEntitlements}
+                  className={`w-full px-4 py-3 rounded-lg border bg-white outline-none text-left text-sm font-medium transition-all flex items-center justify-between disabled:opacity-60 ${
                     dropdownOpen
                       ? 'border-yellow-400 ring-2 ring-yellow-400/50'
                       : 'border-gray-200 hover:border-gray-300'
@@ -143,10 +203,8 @@ export default function CreateCampaign() {
                   />
                 </button>
 
-                {/* Dropdown list */}
                 {dropdownOpen && (
-                  <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1">
-                    {/* Add New Business Option */}
+                  <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                     <button
                       type="button"
                       onClick={() => {
@@ -184,20 +242,18 @@ export default function CreateCampaign() {
               </div>
             </div>
 
-            {/* Continue button */}
             <button
               type="submit"
-              disabled={!campaignName.trim() || !businessProfile}
+              disabled={loading || !campaignName.trim() || !businessProfile || !allowed}
               className={`w-full py-3 rounded-full font-bold text-sm tracking-wide transition-all shadow-md active:scale-95 ${
-                campaignName.trim() && businessProfile
+                campaignName.trim() && businessProfile && allowed && !loading
                   ? 'bg-yellow-600 hover:bg-yellow-700 text-white cursor-pointer'
                   : 'bg-yellow-300 text-white cursor-not-allowed opacity-60'
               }`}
             >
-              Continue
+              {loading ? 'Creating…' : 'Continue'}
             </button>
 
-            {/* Back link */}
             <div className="text-center">
               <Link
                 to="/dashboard"
@@ -210,7 +266,6 @@ export default function CreateCampaign() {
         </div>
       </div>
 
-      {/* Bottom accent bar */}
       <div className="fixed bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 to-yellow-600" />
     </div>
   );

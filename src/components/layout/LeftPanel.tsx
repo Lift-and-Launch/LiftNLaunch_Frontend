@@ -56,35 +56,28 @@ const LeftPanel: React.FC = () => {
   };
 
   const handleAddElement = (elementConfig: any) => {
+    const columnCount =
+      elementConfig.defaultStyles?.gridColumns ||
+      (elementConfig.type === "grid" ? 3 : 2);
+    const cellLabel = elementConfig.type === "grid" ? "Cell" : "Column";
+
     const newElement: WebsiteElement = {
       id: uuidv4(),
       type: elementConfig.type,
       content: elementConfig.defaultContent,
       styles: elementConfig.defaultStyles,
       children:
-        elementConfig.type === "grid"
-          ? [1, 2, 3].map((n) => ({
+        elementConfig.type === "grid" || elementConfig.type === "columns"
+          ? Array.from({ length: columnCount }, (_, i) => ({
               id: uuidv4(),
-              type: "text",
-              content: `<p>Grid Cell ${n}</p>`,
+              type: "text" as const,
+              content: `<p>${cellLabel} ${i + 1}</p>`,
               styles: {
-                padding: "16px",
-                backgroundColor: "#e5e7eb",
-                borderRadius: "4px",
-                minHeight: "80px",
-              },
-            }))
-          : elementConfig.type === "columns"
-          ? [1, 2].map((n) => ({
-              id: uuidv4(),
-              type: "text",
-              content: `<p>Column ${n}</p>`,
-              styles: {
-                padding: "20px",
-                backgroundColor: "#f3f4f6",
-                borderRadius: "8px",
-                flex: "1",
-                minHeight: "120px",
+                padding: elementConfig.type === "grid" ? "16px" : "20px",
+                backgroundColor: elementConfig.type === "grid" ? "#e5e7eb" : "#f3f4f6",
+                borderRadius: elementConfig.type === "grid" ? "4px" : "8px",
+                ...(elementConfig.type === "columns" ? { flex: "1" } : {}),
+                minHeight: elementConfig.type === "grid" ? "80px" : "120px",
               },
             }))
           : elementConfig.type === "slider"

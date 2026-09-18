@@ -71,6 +71,11 @@ const RightPanel: React.FC = () => {
     ? findElementRecursive(currentWebsite.elements, selectedElement) 
     : null;
 
+  // AI / partial elements may omit styles
+  if (selectedElementData && (!selectedElementData.styles || typeof selectedElementData.styles !== "object")) {
+    selectedElementData.styles = {};
+  }
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -1217,7 +1222,7 @@ const RightPanel: React.FC = () => {
               onChange={(e) => {
                 const count = parseInt(e.target.value) || 3;
                 handleStyleChange("gridColumns", count);
-                
+
                 const currentChildren = selectedElementData.children || [];
                 if (currentChildren.length < count) {
                   const newChildren = [...currentChildren];

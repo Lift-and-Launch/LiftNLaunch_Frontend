@@ -1,6 +1,8 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { isSuperAdmin } from '../utils/roles';
+import { goToPricing } from '../utils/pricingNavigation';
 import {
   Users,
   FileText,
@@ -21,7 +23,7 @@ import {
   Rocket,
   ArrowRight,
   Clock,
-  ShieldAlert
+  ShieldAlert,
 } from 'lucide-react';
 import CreateCampaignForm from '../components/CreateCampaignForm';
 import api from '../api/axios';
@@ -71,8 +73,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    if (user && (user.role === 'admin' || user.role === 'superadmin')) {
-      navigate('/admin/dashboard', { replace: true });
+    if (user && isSuperAdmin(user.role)) {
+      navigate(user.adminOtpVerified ? '/admin/dashboard' : '/admin/verify-otp', { replace: true });
     }
   }, [user, navigate]);
 
@@ -81,7 +83,7 @@ export default function Dashboard() {
     return null;
   }
 
-  if (user.role === 'admin' || user.role === 'superadmin') {
+  if (isSuperAdmin(user.role)) {
     return null;
   }
 
@@ -90,6 +92,7 @@ export default function Dashboard() {
 
 const UserDashboardView = ({ logout, user }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [campaigns, setCampaigns] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [stripeClientId, setStripeClientId] = React.useState('');
@@ -175,7 +178,7 @@ const UserDashboardView = ({ logout, user }) => {
 
     if (campaign.status !== 'draft') {
       if (user && !user.isSubscribed) {
-        navigate('/pricing');
+        goToPricing(navigate, location);
       } else {
         navigate('/dashboard/campaign/builder', { state: { campaignId, campaignType: campaign.campaignType } });
       }
@@ -320,7 +323,7 @@ const UserDashboardView = ({ logout, user }) => {
                       </button>
                       {!user.isSubscribed && (
                         <button 
-                          onClick={() => navigate('/pricing')}
+                          onClick={() => goToPricing(navigate, location)}
                           className="px-10 py-5 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 cursor-pointer"
                         >
                            Upgrade Plan
@@ -355,7 +358,7 @@ const UserDashboardView = ({ logout, user }) => {
                      <>
                        <h3 className="text-2xl font-black mb-4 tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">Stripe Connect</h3>
                        <p className="text-gray-400 font-bold text-sm leading-relaxed">
-                         Connect your Stripe account to enable live donations. Keep 95% of what you raise with our flat 5% platform fee.
+                         Connect your Stripe account to enable live donations. Connect payments include a 1.5% platform fee.
                        </p>
                      </>
                    )}
@@ -428,7 +431,9 @@ const UserDashboardView = ({ logout, user }) => {
                              </div>
 
                              {/* Website link preview box */}
-                             {campaign.status === "active" && (
+                             {["active", "published", "live"].includes(
+                               String(campaign.status || "").toLowerCase()
+                             ) ? (
                                <div className="p-4 bg-slate-50 rounded-2xl border border-gray-100 space-y-2">
                                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider block">Live Destination Link</span>
                                  {campaign.abTestingEnabled ? (
@@ -451,15 +456,27 @@ const UserDashboardView = ({ logout, user }) => {
                                      </a>
                                    </div>
                                  ) : (
-                                   <a
-                                     href={`${window.location.origin}/live/${campaign._id}`}
-                                     target="_blank"
-                                     rel="noopener noreferrer"
-                                     className="inline-flex px-3 py-1.5 bg-white border border-gray-150 rounded-xl text-[10px] font-black text-yellow-600 hover:text-yellow-700 transition-colors uppercase tracking-wide items-center gap-1 shadow-sm cursor-pointer"
-                                   >
-                                     🌐 Live Website
-                                   </a>
+                                   <div className="space-y-2">
+                                     <a
+                                       href={`${window.location.origin}/live/${campaign._id}`}
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       className="inline-flex px-3 py-1.5 bg-white border border-gray-150 rounded-xl text-[10px] font-black text-yellow-600 hover:text-yellow-700 transition-colors uppercase tracking-wide items-center gap-1 shadow-sm cursor-pointer"
+                                     >
+                                       🌐 Live Website
+                                     </a>
+                                     <p className="text-[10px] font-medium text-gray-400 break-all">
+                                       {`${window.location.origin}/live/${campaign._id}`}
+                                     </p>
+                                   </div>
                                  )}
+                               </div>
+                             ) : (
+                               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 space-y-1">
+                                 <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider block">Landing page not live yet</span>
+                                 <p className="text-[11px] font-medium text-amber-800/80 leading-relaxed">
+                                   Design your page in the website builder, then click <span className="font-black">Publish</span> to activate the live link here.
+                                 </p>
                                </div>
                              )}
                            </div>
@@ -486,7 +503,23 @@ const UserDashboardView = ({ logout, user }) => {
                              </div>
 
                              <div className="flex items-center gap-2 justify-end">
-                               {campaign.status === "active" && (
+                               <button
+                                 id={`aiAssistant-${campaign._id}`}
+                                 onClick={() => {
+                                   if (user.isSubscribed && user.adminApprovalStatus !== 'approved') {
+                                     alert("Your account is currently under review by our admin team. AI tools unlock after approval.");
+                                     return;
+                                   }
+                                   navigate(`/dashboard/campaign/${campaign._id}/ai`);
+                                 }}
+                                 className="px-4 py-3 bg-yellow-50 text-yellow-700 rounded-xl hover:bg-yellow-100 transition-all active:scale-95 flex items-center gap-2 font-black text-[10px] uppercase tracking-wider cursor-pointer"
+                                 title="Campaign AI Assistant"
+                               >
+                                 <Sparkles size={16} /> AI
+                               </button>
+                               {["active", "published", "live"].includes(
+                                 String(campaign.status || "").toLowerCase()
+                               ) && (
                                  <>
                                    <button
                                      id={`promoteCampaign-${campaign._id}`}
@@ -644,7 +677,7 @@ const UserDashboardView = ({ logout, user }) => {
                         <h4 className="font-black text-lg text-gray-900 mb-2">Try Premium Builder</h4>
                         <p className="text-gray-400 font-bold text-xs mb-6 px-4">Unlock advanced drag & drop sections and custom SEO slugs.</p>
                         <button 
-                          onClick={() => navigate('/pricing')}
+                          onClick={() => goToPricing(navigate, location)}
                           className="w-full py-4 bg-yellow-500 text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:shadow-xl transition-all cursor-pointer"
                         >
                           Upgrade Now

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import api from "../api/axios";
+import OptimizedImage from "../components/OptimizedImage";
+import Seo from "../seo/Seo";
+import { pageSeo } from "../seo/seoConfig";
 
 const dummyPastCampaigns = new Array(3).fill({
   id: "past-1",
@@ -29,7 +32,7 @@ const Campaigns = () => {
             title: c.campaignName,
             description: c.description || c.businessInfo?.description,
             amountRaised: 0,
-            platform: 'NEIGHBORHOOD',
+            platform: 'LIFT & LAUNCH',
             logoUrl: c.businessInfo?.logoUrl || "/campaign/image (14).png"
           }));
           setCurrentCampaigns(campaigns);
@@ -77,6 +80,7 @@ const Campaigns = () => {
 
   return (
     <div className="bg-white text-black">
+      <Seo {...pageSeo.campaigns} />
       {/* Explore Section */}
       <section className="py-20" ref={exploreRef}>
         <div className="max-w-screen-xl mx-auto px-4 grid md:grid-cols-2 items-center gap-12">
@@ -97,10 +101,15 @@ const Campaigns = () => {
             </button>
           </div>
           <div className="rounded-xl overflow-hidden shadow-md">
-            <img
-              src="/campaign/image (16).png"
+            <OptimizedImage
+              src="/images/campaign-success.webp"
               alt="success"
-              className="object-cover w-full h-auto"
+              className="w-full h-auto object-contain"
+              width={900}
+              height={700}
+              sizes="(max-width: 768px) 100vw, 560px"
+              loading="eager"
+              fetchPriority="high"
             />
           </div>
         </div>
