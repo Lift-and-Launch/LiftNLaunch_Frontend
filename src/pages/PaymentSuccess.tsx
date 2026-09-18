@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Check, ShieldCheck, ArrowRight, Sparkles, Loader2 } from "lucide-react";
-import { fetchEntitlements } from "../utils/entitlements";
+import { fetchEntitlements, isTrialing } from "../utils/entitlements";
 import { formatPlanLabel } from "../utils/plans";
 
 export default function PaymentSuccess() {
@@ -12,6 +12,8 @@ export default function PaymentSuccess() {
   const [showModal, setShowModal] = useState(true);
   const [syncing, setSyncing] = useState(true);
   const [planLabel, setPlanLabel] = useState<string | null>(null);
+  const [trialActive, setTrialActive] = useState(false);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,7 +26,7 @@ export default function PaymentSuccess() {
       for (let i = 0; i < 4; i++) {
         try {
           entitlements = await fetchEntitlements();
-          if (entitlements?.isSubscribed) break;
+          if (entitlements?.isSubscribed || isTrialing(entitlements)) break;
         } catch {
           /* retry */
         }
@@ -33,6 +35,12 @@ export default function PaymentSuccess() {
       if (!cancelled) {
         if (entitlements?.plan) {
           setPlanLabel(formatPlanLabel(entitlements.plan));
+        }
+        if (isTrialing(entitlements)) {
+          setTrialActive(true);
+          if (typeof entitlements.trialDaysRemaining === "number") {
+            setTrialDaysLeft(entitlements.trialDaysRemaining);
+          }
         }
         setSyncing(false);
       }
@@ -46,6 +54,14 @@ export default function PaymentSuccess() {
     };
   }, [refreshUser]);
 
+  const statusLine = syncing
+    ? "Syncing your subscription…"
+    : trialActive
+      ? trialDaysLeft != null
+        ? `Your ${trialDaysLeft}-day Starter trial is active. Create campaigns anytime.`
+        : "Your Starter free trial is active. Create campaigns anytime."
+      : "Your plan is activating. If admin approval is required, builders unlock once your account is approved.";
+
   return (
     <div className="w-full min-h-screen bg-white flex items-center justify-center px-4 relative overflow-hidden">
       {showModal && (
@@ -56,14 +72,10 @@ export default function PaymentSuccess() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-gray-900 tracking-tight">
-                Payment Received
+              <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+                {trialActive ? "Trial started" : "Payment Received"}
               </h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                {syncing
-                  ? "Syncing your subscription…"
-                  : "Your plan is activating. If admin approval is required, builders unlock once your account is approved."}
-              </p>
+              <p className="text-gray-500 text-sm leading-relaxed">{statusLine}</p>
             </div>
 
             <button
@@ -99,7 +111,7 @@ export default function PaymentSuccess() {
         </div>
 
         <h1 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">
-          Payment Successful!
+          {trialActive ? "Trial Activated!" : "Payment Successful!"}
         </h1>
         <p className="text-yellow-700 text-sm font-semibold tracking-wider uppercase mb-6 flex items-center justify-center gap-1">
           <ShieldCheck className="w-4 h-4" />
@@ -117,13 +129,15 @@ export default function PaymentSuccess() {
             <span className="text-gray-500 text-sm">Plan</span>
             <span className="text-yellow-700 bg-yellow-100 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">
               {planLabel || "Syncing…"}
+              {trialActive ? " · Trial" : ""}
             </span>
           </div>
         </div>
 
         <p className="text-gray-500 text-sm leading-relaxed mb-8">
-          Thank you for choosing Lift &amp; Launch. Your Stripe checkout completed.
-          Campaign tools unlock based on your plan and account approval status.
+          {trialActive
+            ? "Thanks for starting your Starter trial. Campaign tools and Business Coach are unlocked for the trial period."
+            : "Thank you for choosing Lift & Launch. Your Stripe checkout completed. Campaign tools unlock based on your plan and account approval status."}
         </p>
 
         <button

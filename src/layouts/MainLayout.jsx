@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import FreeTrialTopBar from '../components/FreeTrialTopBar';
 import { Toaster } from 'react-hot-toast';
 
 const MainLayout = ({ children }) => {
@@ -19,6 +20,7 @@ const MainLayout = ({ children }) => {
     >
       <Toaster position="top-right" />
       <div className="shrink-0">
+        <FreeTrialTopBar />
         <Navbar />
       </div>
       <main

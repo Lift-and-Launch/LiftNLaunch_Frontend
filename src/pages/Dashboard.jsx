@@ -26,9 +26,15 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import CreateCampaignForm from '../components/CreateCampaignForm';
+import TrialBanner from '../components/TrialBanner';
 import api from '../api/axios';
 import AdminDashboardView from '../components/AdminDashboardView';
 import { canAccessPremiumFeatures, hasActiveSubscription } from '../utils/subscription';
+import {
+  fetchEntitlements,
+  hasCampaignBuilderAccess,
+  isTrialing,
+} from '../utils/entitlements';
 
 const scrollToSection = (id) => {
   const element = document.getElementById(id);
@@ -96,14 +102,19 @@ const UserDashboardView = ({ logout, user }) => {
   const [campaigns, setCampaigns] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [stripeClientId, setStripeClientId] = React.useState('');
-  const planBadge = getSubscriptionBadge(user.subscription?.plan);
+  const [entitlements, setEntitlements] = React.useState(null);
+  const planBadge = getSubscriptionBadge(
+    entitlements?.plan || user.subscription?.plan
+  );
+  const builderAccess = hasCampaignBuilderAccess(user, entitlements);
+  const trialing = isTrialing(entitlements);
 
   React.useEffect(() => {
     const fetchCampaigns = async () => {
       try {
         const response = await api.get('/campaigns');
         if (response.data.success) {
-          setCampaigns(response.data.data);
+          setCampaigns(response.data.data || []);
         }
       } catch (error) {
         console.error('Error fetching campaigns:', error);
@@ -121,7 +132,16 @@ const UserDashboardView = ({ logout, user }) => {
         console.error('Error fetching Stripe config:', error);
       }
     };
+    const loadEntitlements = async () => {
+      try {
+        const data = await fetchEntitlements();
+        setEntitlements(data);
+      } catch (error) {
+        console.warn('Failed to load entitlements:', error);
+      }
+    };
     fetchCampaigns();
+    loadEntitlements();
     if (!user.stripeAccountId) {
       fetchStripeConfig();
     }
@@ -166,7 +186,7 @@ const UserDashboardView = ({ logout, user }) => {
   const handleEditCampaign = (campaign) => {
     const campaignId = campaign._id || campaign.id;
 
-    if (user.isSubscribed && user.adminApprovalStatus !== 'approved') {
+    if (hasActiveSubscription(user) && !builderAccess) {
       alert("Your account is currently under review by our admin team. You cannot edit or build campaign websites until approved.");
       return;
     }
@@ -177,18 +197,31 @@ const UserDashboardView = ({ logout, user }) => {
     }
 
     if (campaign.status !== 'draft') {
-      if (user && !user.isSubscribed) {
+      if (user && !hasActiveSubscription(user)) {
         goToPricing(navigate, location);
       } else {
-        navigate('/dashboard/campaign/builder', { state: { campaignId, campaignType: campaign.campaignType } });
+        navigate('/dashboard/campaign/builder', {
+          state: { campaignId, campaignType: campaign.campaignType },
+        });
       }
     } else {
       if (!campaign.businessInfo || !campaign.businessInfo.businessName) {
-        navigate('/dashboard/campaign/register-business', { state: { campaignId, campaignType: campaign.campaignType } });
+        navigate('/dashboard/campaign/register-business', {
+          state: { campaignId, campaignType: campaign.campaignType },
+        });
       } else if (!campaign.campaignConfig) {
-        navigate('/dashboard/campaign/configure', { state: { campaignId, campaignType: campaign.campaignType } });
+        navigate('/dashboard/campaign/configure', {
+          state: { campaignId, campaignType: campaign.campaignType },
+        });
       } else {
-        navigate('/dashboard/campaign/review', { state: { campaignId, campaignType: campaign.campaignType } });
+        navigate('/dashboard/campaign/review', {
+          state: {
+            campaignId,
+            campaignType: campaign.campaignType,
+            campaignConfig: campaign.campaignConfig,
+            campaignName: campaign.campaignName,
+          },
+        });
       }
     }
   };
@@ -212,9 +245,13 @@ const UserDashboardView = ({ logout, user }) => {
              </div>
              <div className="flex items-center gap-6">
                <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-100 rounded-full">
-                  <div className={`w-2 h-2 rounded-full ${user.isSubscribed ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                  <div className={`w-2 h-2 rounded-full ${user.isSubscribed || trialing ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                   <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
-                    {user.isSubscribed ? 'Subscribed' : 'Free Account'}
+                    {trialing
+                      ? `Trial · ${entitlements?.trialDaysRemaining ?? '—'}d left`
+                      : user.isSubscribed
+                        ? 'Subscribed'
+                        : 'Free Account'}
                   </span>
                </div>
                <button onClick={logout} className="flex items-center gap-2 text-sm font-black text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest cursor-pointer">
@@ -225,23 +262,25 @@ const UserDashboardView = ({ logout, user }) => {
        </div>
 
        <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
+          <TrialBanner className="mb-8" />
+
           {/* Personalized Greeting Header */}
           <div className="mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
              <div>
                 <h2 className="text-3xl font-black text-gray-900 tracking-tight">Welcome back, {user.name}! 👋</h2>
                 <p className="text-gray-400 font-bold text-sm mt-1">Here is the active summary of your workspace and campaign metrics.</p>
              </div>
-             {user.isSubscribed ? (
+             {user.isSubscribed || trialing ? (
                <div
                  className={`flex items-center gap-2 self-start sm:self-center px-4 py-2.5 border rounded-2xl text-xs font-black uppercase tracking-wide ${planBadge.wrap}`}
                >
                  <Star size={14} className={planBadge.star} />
-                 {planBadge.label}
+                 {trialing ? 'Starter Trial' : planBadge.label}
                </div>
              ) : null}
           </div>
 
-          {user.isSubscribed && user.adminApprovalStatus === 'pending' && (
+          {user.isSubscribed && !trialing && user.adminApprovalStatus === 'pending' && (
             <div className="mb-10 bg-amber-50 border border-amber-250 rounded-[2rem] p-8 flex flex-col md:flex-row items-center gap-6 shadow-sm">
               <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 shrink-0">
                 <Clock size={32} />
@@ -295,7 +334,7 @@ const UserDashboardView = ({ logout, user }) => {
                             navigate('/pricing');
                             return;
                           }
-                          if (user.adminApprovalStatus !== 'approved') {
+                          if (!builderAccess) {
                             alert("Your account is currently under review by our admin team. You cannot create new campaigns until approved.");
                             return;
                           }
@@ -506,7 +545,7 @@ const UserDashboardView = ({ logout, user }) => {
                                <button
                                  id={`aiAssistant-${campaign._id}`}
                                  onClick={() => {
-                                   if (user.isSubscribed && user.adminApprovalStatus !== 'approved') {
+                                   if (hasActiveSubscription(user) && !builderAccess) {
                                      alert("Your account is currently under review by our admin team. AI tools unlock after approval.");
                                      return;
                                    }

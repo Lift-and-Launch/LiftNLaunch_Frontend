@@ -42,6 +42,30 @@ body {
   overflow-x: hidden;
 }
 
+/* Clickable affordance app-wide: links, buttons, and button-like controls */
+a,
+button,
+[role="button"],
+summary,
+label[for],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+select {
+  cursor: pointer;
+}
+
+button:disabled,
+a[aria-disabled="true"],
+input:disabled,
+select:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 /* Canvas Styles */
 .canvas-element {
   transition: all 0.2s ease-in-out;

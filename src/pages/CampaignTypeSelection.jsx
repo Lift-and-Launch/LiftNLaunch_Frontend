@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { Gift, TrendingUp, Heart, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Gift, TrendingUp, Heart, ChevronLeft } from 'lucide-react';
 import api from '../api/axios';
 
 const campaignTypes = [
@@ -43,12 +43,10 @@ export default function CampaignTypeSelection() {
 
       if (response.data.success) {
         if (hasBusinessInfo) {
-          // Skip registration and go to configuration
           navigate('/dashboard/campaign/configure', { 
             state: { ...location.state, campaignType: selected } 
           });
         } else {
-          // Go to business registration
           navigate('/dashboard/campaign/register-business', { 
             state: { ...location.state, campaignType: selected } 
           });
@@ -111,7 +109,7 @@ export default function CampaignTypeSelection() {
           <div className="flex flex-col items-center gap-6">
             <button
               onClick={handleProceed}
-              disabled={!selected}
+              disabled={!selected || loading}
               className={`px-12 py-5 rounded-2xl font-black text-lg transition-all shadow-xl active:scale-95 ${
                 selected 
                   ? 'bg-yellow-500 text-black hover:bg-yellow-600' 

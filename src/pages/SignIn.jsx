@@ -61,8 +61,14 @@ export default function SignIn() {
         <div className="bg-white p-10 rounded-3xl shadow-xl border border-gray-100">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-gray-900 mb-2">Welcome Back</h2>
-            <p className="text-gray-500">Sign in to your Neighborhood account</p>
+            <p className="text-gray-500">Sign in to your Lift &amp; Launch account</p>
           </div>
+
+          {location.state?.notice && (
+            <div className="bg-amber-50 border border-amber-100 text-amber-900 p-4 rounded-xl text-sm mb-6 font-bold">
+              {location.state.notice}
+            </div>
+          )}
 
           {error && (
             <div className="bg-rose-50 border border-rose-100 text-rose-600 p-4 rounded-xl text-sm mb-6 font-bold flex items-center gap-2">

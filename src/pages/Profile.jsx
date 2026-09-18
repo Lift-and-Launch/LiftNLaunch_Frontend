@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 import api from "../api/axios";
 import { goToPricing } from "../utils/pricingNavigation";
-import { fetchEntitlements } from "../utils/entitlements";
+import { fetchEntitlements, isTrialing } from "../utils/entitlements";
+import TrialBanner from "../components/TrialBanner";
 import { formatPlanLabel, isUnlimitedCampaigns } from "../utils/plans";
 
 const btnBase =
@@ -328,7 +329,9 @@ export default function Profile() {
     entitlements?.isSubscribed ||
     user.isSubscribed ||
     user.subscription?.isSubscribed;
-  const currentPeriodEnd = user.subscription?.currentPeriodEnd;
+  const trialing = isTrialing(entitlements);
+  const currentPeriodEnd =
+    entitlements?.trialEndsAt || user.subscription?.currentPeriodEnd;
   const planKey = entitlements?.plan || user.subscription?.plan || "none";
   const planName = formatPlanLabel(planKey);
   const subStatus =
@@ -347,6 +350,9 @@ export default function Profile() {
     });
     const diffTime = expiryDate.getTime() - new Date().getTime();
     daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+  if (trialing && typeof entitlements?.trialDaysRemaining === "number") {
+    daysLeft = entitlements.trialDaysRemaining;
   }
 
   const getPlanBadgeStyles = (plan) => {
@@ -439,6 +445,8 @@ export default function Profile() {
           )}
         </div>
 
+        <TrialBanner />
+
         {/* Profile Card Header */}
         <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 sm:p-10 shadow-sm relative overflow-hidden flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black font-black text-3xl shadow-lg flex-shrink-0">
@@ -482,9 +490,15 @@ export default function Profile() {
                   
                   <div className={`p-6 rounded-3xl ${getPlanBadgeStyles(planKey)} flex items-center justify-between shadow-lg relative overflow-hidden group`}>
                     <div className="space-y-1 relative z-10">
-                      <span className="text-[9px] font-black uppercase tracking-widest opacity-80">Active Plan</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest opacity-80">
+                        {trialing ? "Free Trial" : "Active Plan"}
+                      </span>
                       <h4 className="text-2xl font-black uppercase tracking-tight">{planName}</h4>
-                      <p className="text-[10px] font-bold opacity-90">Auto-renews next cycle · 1.5% Connect fee</p>
+                      <p className="text-[10px] font-bold opacity-90">
+                        {trialing
+                          ? `Trial ends ${formattedExpiry} · then ${planName} billing`
+                          : "Auto-renews next cycle · 1.5% Connect fee"}
+                      </p>
                     </div>
                     <CreditCard size={48} className="opacity-15 absolute right-6 top-1/2 -translate-y-1/2" />
                   </div>
@@ -492,12 +506,14 @@ export default function Profile() {
                   <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                     <div className="space-y-1">
                       <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Subscription Status</span>
-                      <div className="flex items-center gap-1.5 text-xs font-black text-green-600 uppercase">
+                      <div className={`flex items-center gap-1.5 text-xs font-black uppercase ${trialing ? "text-amber-600" : "text-green-600"}`}>
                         <CheckCircle2 size={16} /> {subStatus}
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Renewal Date</span>
+                      <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">
+                        {trialing ? "Trial Ends" : "Renewal Date"}
+                      </span>
                       <div className="flex items-center gap-1.5 text-xs font-black text-gray-800">
                         <Calendar size={16} className="text-gray-400" /> {formattedExpiry}
                       </div>
@@ -527,7 +543,9 @@ export default function Profile() {
                     <div className="flex justify-between items-end">
                       <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Time Remaining</span>
                       <span className="text-sm font-black text-gray-900">
-                        {daysLeft > 0 ? `${daysLeft} Days Left` : "Expired / Suspended"}
+                        {daysLeft > 0
+                          ? `${daysLeft} Days Left${trialing ? " (trial)" : ""}`
+                          : "Expired / Suspended"}
                       </span>
                     </div>
                     
@@ -536,7 +554,12 @@ export default function Profile() {
                         className={`h-full rounded-full transition-all duration-1000 ${
                           daysLeft > 10 ? "bg-green-500" : daysLeft > 5 ? "bg-yellow-500" : "bg-red-500"
                         }`}
-                        style={{ width: `${Math.min(100, Math.max(0, (daysLeft / 30) * 100))}%` }}
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(0, (daysLeft / (trialing ? 15 : 30)) * 100)
+                          )}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -547,21 +570,26 @@ export default function Profile() {
                         {actionError || actionSuccess}
                       </p>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => goToPricing(navigate, location)}
-                      className="text-xs font-black uppercase tracking-widest text-yellow-700 hover:text-yellow-800"
-                    >
-                      Change plan →
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actionLoading === "cancel"}
-                      onClick={openCancelModal}
-                      className="w-full sm:w-auto px-6 py-3 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-                    >
-                      {actionLoading === "cancel" ? "Cancelling..." : "Cancel Subscription"}
-                    </button>
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4">
+                      <button
+                        type="button"
+                        onClick={() => goToPricing(navigate, location)}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-yellow-400 text-black border border-yellow-500 shadow-sm hover:bg-yellow-500 hover:shadow-md active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        Change plan
+                        <span aria-hidden="true" className="text-sm leading-none">
+                          →
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={actionLoading === "cancel"}
+                        onClick={openCancelModal}
+                        className="w-full sm:w-auto px-6 py-3 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        {actionLoading === "cancel" ? "Cancelling..." : "Cancel Subscription"}
+                      </button>
+                    </div>
                   </div>
 
                 </div>
@@ -573,14 +601,14 @@ export default function Profile() {
                   <div className="space-y-2">
                     <h4 className="font-black text-gray-950">No Active Plan Connected</h4>
                     <p className="text-gray-400 font-bold text-xs max-w-sm mx-auto">
-                      Choose Starter, Growth, or Pro Elite to unlock campaigns, visits, and Business Coach.
+                      Start a 15-day Starter trial, or choose Growth / Pro Elite to unlock campaigns, visits, and Business Coach.
                     </p>
                   </div>
                   <button
                     onClick={() => goToPricing(navigate, location)}
                     className="px-8 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
                   >
-                    View Pricing Plans
+                    {entitlements?.trialUsed ? "View Pricing Plans" : "Start free trial"}
                   </button>
                 </div>
               )}

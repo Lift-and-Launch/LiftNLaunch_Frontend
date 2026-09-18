@@ -16,6 +16,8 @@ export function formatPlanLabel(plan) {
   return PLAN_LABELS[key] || plan;
 }
 
+export const TRIAL_PERIOD_DAYS = 15;
+
 export const SAAS_PRICING_TIERS = [
   {
     id: "starter",
@@ -24,12 +26,15 @@ export const SAAS_PRICING_TIERS = [
     period: "month",
     isPopular: false,
     isFeatured: false,
+    trialEligible: true,
+    trialCta: "Start 15-day free trial",
+    paidCta: "Subscribe to Starter",
     features: [
-      "1 campaign (funnel)",
-      "Up to 1,000 visits / month",
+      "15-day free trial (first time)",
+      "1 campaign · 1,000 visits / month",
       "CSV export",
       "Business Coach included",
-      "Platform fee 1.5% on Connect payments",
+      "1.5% Connect platform fee",
     ],
   },
   {
@@ -39,9 +44,10 @@ export const SAAS_PRICING_TIERS = [
     period: "month",
     isPopular: true,
     isFeatured: true,
+    trialEligible: false,
+    paidCta: "Buy Growth",
     features: [
-      "Up to 5 campaigns",
-      "Up to 10,000 visits / month",
+      "5 campaigns · 10,000 visits / month",
       "A/B testing",
       "CRM tools + branding options",
       "Priority support",
@@ -55,9 +61,10 @@ export const SAAS_PRICING_TIERS = [
     period: "month",
     isPopular: false,
     isFeatured: false,
+    trialEligible: false,
+    paidCta: "Buy Pro Elite",
     features: [
-      "Unlimited campaigns",
-      "Up to 50,000 visits / month",
+      "Unlimited campaigns · 50,000 visits / month",
       "Everything in Growth",
       "Integrations, white-label, team access",
       "Business Coach included",
@@ -65,21 +72,39 @@ export const SAAS_PRICING_TIERS = [
   },
 ];
 
+/** CTA label for a pricing tier given entitlements (hides trial when trialUsed). */
+export function getPlanCheckoutCta(tier, entitlements) {
+  if (!tier) return "Get Started";
+  if (tier.id === "starter" && tier.trialEligible && !entitlements?.trialUsed) {
+    return tier.trialCta || "Start 15-day free trial";
+  }
+  return tier.paidCta || "Get Started";
+}
+
+/** Whether Starter checkout should request a trial (backend also auto-skips if used). */
+export function shouldRequestStarterTrial(entitlements) {
+  return !entitlements?.trialUsed;
+}
+
 export function isUnlimitedCampaigns(entitlements) {
   if (!entitlements) return false;
-  return (
-    entitlements.maxCampaigns == null || entitlements.usage?.campaignsRemaining == null
-  );
+  // Only Pro Elite-style plans omit a campaign cap
+  return entitlements.maxCampaigns == null;
 }
 
 export function canCreateCampaign(entitlements) {
-  if (!entitlements?.isSubscribed) return false;
+  if (!entitlements) return false;
+  const hasPlan =
+    !!entitlements.isSubscribed ||
+    entitlements.isTrialing ||
+    entitlements.subscriptionStatus === "trialing";
+  if (!hasPlan) return false;
   if (isUnlimitedCampaigns(entitlements)) return true;
   const remaining = entitlements.usage?.campaignsRemaining;
   if (typeof remaining === "number") return remaining > 0;
   const max = entitlements.maxCampaigns;
   const used = entitlements.usage?.campaignsUsed ?? 0;
-  return typeof max === "number" ? used < max : false;
+  return typeof max === "number" ? used < max : true;
 }
 
 export function canUseAbTesting(entitlements) {

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function SignUp() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, register } = useAuth();
   
   const [form, setForm] = useState({
@@ -15,11 +16,13 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const postAuthPath = location.state?.from?.pathname || '/pricing';
+
   useEffect(() => {
     if (user) {
-      navigate('/dashboard', { replace: true });
+      navigate(postAuthPath, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, postAuthPath]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -45,7 +48,12 @@ export default function SignUp() {
 
       if (result.success) {
         alert(result.message || "Account created successfully! Please sign in.");
-        navigate('/signin');
+        navigate('/signin', {
+          state: {
+            from: { pathname: postAuthPath },
+            notice: 'Account created — sign in to start your 15-day free trial.',
+          },
+        });
       } else {
         setError(result.message || "Signup failed");
       }
@@ -62,7 +70,11 @@ export default function SignUp() {
         <div className="bg-white p-10 rounded-3xl shadow-xl border border-gray-100">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-gray-900 mb-2">Join Us</h2>
-            <p className="text-gray-500">Create your Neighborhood account</p>
+            <p className="text-gray-500">
+              {postAuthPath === '/pricing'
+                ? 'Create an account to start your 15-day free trial'
+                : 'Create your Lift & Launch account'}
+            </p>
           </div>
 
           {error && (
@@ -140,7 +152,11 @@ export default function SignUp() {
           <div className="mt-8 text-center pt-8 border-t border-gray-100">
             <p className="text-gray-500 font-medium">
               Already have an account?{' '}
-              <Link to="/signin" className="text-yellow-600 font-bold hover:underline">
+              <Link
+                to="/signin"
+                state={{ from: { pathname: postAuthPath } }}
+                className="text-yellow-600 font-bold hover:underline cursor-pointer"
+              >
                 Sign In
               </Link>
             </p>

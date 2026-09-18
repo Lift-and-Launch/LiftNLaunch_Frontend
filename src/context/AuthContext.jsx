@@ -49,6 +49,35 @@ const mergeApiUser = (existing, apiUser, tokenExtras = {}) => {
   };
 };
 
+/** Attach trial/plan fields from entitlements onto the session user. */
+const mergeEntitlementsOntoUser = async (userBase) => {
+  try {
+    // Dynamic import avoids circular dependency at module load.
+    const { fetchEntitlements } = await import("../utils/entitlements");
+    const ent = await fetchEntitlements();
+    if (!ent) return userBase;
+    return {
+      ...userBase,
+      isSubscribed: Boolean(ent.isSubscribed ?? userBase.isSubscribed),
+      isTrialing: Boolean(ent.isTrialing),
+      trialUsed: Boolean(ent.trialUsed),
+      trialEndsAt: ent.trialEndsAt || null,
+      trialDaysRemaining: ent.trialDaysRemaining ?? null,
+      subscriptionStatus: ent.subscriptionStatus || userBase.subscriptionStatus,
+      subscription: {
+        ...(userBase.subscription || {}),
+        plan: ent.plan || userBase.subscription?.plan,
+        isSubscribed: Boolean(ent.isSubscribed),
+        subscriptionStatus: ent.subscriptionStatus,
+        status: ent.subscriptionStatus,
+        currentPeriodEnd: ent.trialEndsAt || userBase.subscription?.currentPeriodEnd,
+      },
+    };
+  } catch {
+    return userBase;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,13 +122,14 @@ export const AuthProvider = ({ children }) => {
 
         const response = await api.get('/auth/me');
         if (response.data.success) {
-          setUser(
-            mergeApiUser(userData, response.data.user || {}, {
-              token: userData.token,
-              otpRequired: false,
-              adminOtpVerified: true,
-            })
-          );
+          const merged = mergeApiUser(userData, response.data.user || {}, {
+            token: userData.token,
+            otpRequired: false,
+            adminOtpVerified: true,
+          });
+          const withEntitlements = await mergeEntitlementsOntoUser(merged);
+          setUser(withEntitlements);
+          persistVerifiedSession(withEntitlements);
         } else {
           clearAllSessions();
         }
@@ -166,8 +196,9 @@ export const AuthProvider = ({ children }) => {
           adminOtpVerified: true,
           challengeId: null,
         });
-        setUser(userData);
-        persistVerifiedSession(userData);
+        const withEntitlements = await mergeEntitlementsOntoUser(userData);
+        setUser(withEntitlements);
+        persistVerifiedSession(withEntitlements);
         return { success: true };
       }
 
@@ -312,11 +343,14 @@ export const AuthProvider = ({ children }) => {
       if (response.data.success) {
         const savedUser = localStorage.getItem(USER_STORAGE_KEY);
         const userData = savedUser ? JSON.parse(savedUser) : {};
-        const updatedUser = mergeApiUser(userData, response.data.user || {}, {
+        let updatedUser = mergeApiUser(userData, response.data.user || {}, {
           token: userData.token,
           otpRequired: false,
           adminOtpVerified: true,
         });
+
+        updatedUser = await mergeEntitlementsOntoUser(updatedUser);
+
         setUser(updatedUser);
         persistVerifiedSession(updatedUser);
         return updatedUser;

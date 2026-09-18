@@ -8,6 +8,7 @@ import { PRICING_RETURN_KEY } from "./utils/pricingNavigation";
 import {
   canAccessPremiumFeatures,
   hasActiveSubscription,
+  isUserTrialing,
   premiumAccessRedirect,
 } from "./utils/subscription";
 
@@ -129,10 +130,11 @@ const ApprovedRoute = ({ children }) => {
     }
     return <Navigate to="/pricing" replace />;
   }
-  if (user.adminApprovalStatus !== "approved") {
-    return <Navigate to="/dashboard" replace />;
+  // Trial users are auto-approved for campaign create / builder flows
+  if (isUserTrialing(user) || user.adminApprovalStatus === "approved") {
+    return children;
   }
-  return children;
+  return <Navigate to="/dashboard" replace />;
 };
 
 const AdminRoute = ({ children }) => {
