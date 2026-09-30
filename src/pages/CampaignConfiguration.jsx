@@ -18,6 +18,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import {
+  sanitizeDescription,
+  sanitizeBusinessText,
+  sanitizeAlphaName,
+  sanitizeDecimal,
+  sanitizeInteger,
+  isValidUrl,
+} from '../utils/formInput';
 
 const CAMPAIGN_CATEGORIES = [
   'Technology',
@@ -30,6 +38,7 @@ const CAMPAIGN_CATEGORIES = [
   'Design',
   'Education',
   'Environment',
+  'Event',
   'Fashion',
   'Film & Video',
   'Food & Beverage',
@@ -44,11 +53,18 @@ const CAMPAIGN_CATEGORIES = [
   'Other',
 ];
 
+const CAMPAIGN_GOAL_OPTIONS = [
+  'Raise Funds',
+  'Email Sign Ups',
+  'Show Support',
+];
+
 const ERROR_FIELD_IDS = {
   name: 'basicsName',
   category: 'basicsCategory',
   tagline: 'basicsTagline',
   guidingStrategy: 'basicsGuidingStrategy',
+  campaignGoals: 'basicsCampaignGoals',
   goal: 'basicsGoal',
   duration: 'basicsDuration',
   startDate: 'basicsStartDate',
@@ -67,6 +83,7 @@ const ERROR_LABELS = {
   category: 'Campaign Category',
   tagline: 'Short Tagline',
   guidingStrategy: 'Guiding Campaign Strategy',
+  campaignGoals: 'Campaign Goals',
   goal: 'Goal / Target Raise Amount',
   duration: 'Campaign Duration',
   startDate: 'Start Date',
@@ -75,8 +92,8 @@ const ERROR_LABELS = {
   country: 'Country of Incorporation',
   minInvestment: 'Minimum Investment',
   equity: 'Equity Offered',
-  problem: 'Problem Description',
-  howItHelps: 'How Donations Help',
+  problem: 'Campaign Description',
+  howItHelps: 'Detailed Campaign Goal',
   coverImage: 'Cover Image',
   rewards: 'Reward Tiers',
 };
@@ -98,6 +115,7 @@ export default function CampaignConfiguration() {
       duration: '',
       startDate: '',
       guidingStrategy: '',
+      campaignGoals: '',
     },
     // Reward Specific
     rewards: [{ title: '', amount: '', description: '', delivery: '', quantity: '' }],
@@ -115,6 +133,7 @@ export default function CampaignConfiguration() {
     urgency: 'Moderate',
     problem: '',
     howItHelps: '',
+    includeFundraisingGoal: true,
     // Media
     videoUrl: '',
     story: '',
@@ -177,6 +196,7 @@ export default function CampaignConfiguration() {
                   : config.basics?.duration || '',
                 startDate: config.basics?.startDate ? config.basics.startDate.split('T')[0] : '',
                 guidingStrategy: config.basics?.guidingStrategy || '',
+                campaignGoals: config.basics?.campaignGoals || '',
               },
               videoUrl: config.videoUrl || '',
               story: config.story || '',
@@ -198,6 +218,12 @@ export default function CampaignConfiguration() {
               urgency: config.urgency || 'Moderate',
               problem: config.problem || '',
               howItHelps: config.howItHelps || '',
+              includeFundraisingGoal:
+                typeof config.includeFundraisingGoal === 'boolean'
+                  ? config.includeFundraisingGoal
+                  : config.basics?.campaignGoals
+                    ? config.basics.campaignGoals === 'Raise Funds'
+                    : true,
             }));
             const loadedCategory = config.basics?.category || '';
             if (loadedCategory) {
@@ -335,11 +361,20 @@ export default function CampaignConfiguration() {
       newErrors.guidingStrategy = "Guiding strategy is required";
     }
 
+    if (activeType === 'donation' && !formData.basics.campaignGoals) {
+      newErrors.campaignGoals = "Campaign goals is required";
+    }
+
+    const requireFundraisingGoal =
+      activeType !== 'donation' || formData.includeFundraisingGoal !== false;
+
     const goalNum = Number(formData.basics.goal);
-    if (formData.basics.goal === '' || formData.basics.goal === null || formData.basics.goal === undefined) {
-      newErrors.goal = "Goal amount is required";
-    } else if (isNaN(goalNum) || goalNum <= 0) {
-      newErrors.goal = "Goal amount must be a number greater than 0";
+    if (requireFundraisingGoal) {
+      if (formData.basics.goal === '' || formData.basics.goal === null || formData.basics.goal === undefined) {
+        newErrors.goal = "Goal amount is required";
+      } else if (isNaN(goalNum) || goalNum <= 0) {
+        newErrors.goal = "Goal amount must be a number greater than 0";
+      }
     }
 
     // Type Specific
@@ -379,14 +414,14 @@ export default function CampaignConfiguration() {
         newErrors.rewards = rewardErrors;
       }
     } else if (activeType === 'donation') {
-      if (!formData.basics.duration) {
+      if (requireFundraisingGoal && !formData.basics.duration) {
         newErrors.duration = "Duration is required";
       }
       if (!formData.problem?.trim()) {
-        newErrors.problem = "Problem description is required";
+        newErrors.problem = "Campaign description is required";
       }
       if (!formData.howItHelps?.trim()) {
-        newErrors.howItHelps = "How donations help description is required";
+        newErrors.howItHelps = "Detailed campaign goal is required";
       }
     } else if (activeType === 'investment') {
       if (!formData.legalName?.trim()) {
@@ -445,6 +480,8 @@ export default function CampaignConfiguration() {
       }
 
       // Prepare payload based on type
+      const includeFundraising =
+        activeType !== 'donation' || formData.includeFundraisingGoal !== false;
       const payload = {
         campaignType: activeType,
         paymentOptionActive: paymentOptionActive,
@@ -454,10 +491,13 @@ export default function CampaignConfiguration() {
             name: formData.basics.name.trim(),
             tagline: formData.basics.tagline.trim(),
             category: formData.basics.category.trim(),
-            goal: Number(formData.basics.goal),
+            campaignGoals: formData.basics.campaignGoals || '',
+            goal: includeFundraising ? Number(formData.basics.goal) : 0,
             duration: activeType === 'investment' 
               ? 365 
-              : (formData.basics.duration === 'forever' ? 36500 : Number(formData.basics.duration || 30)),
+              : includeFundraising
+                ? (formData.basics.duration === 'forever' ? 36500 : Number(formData.basics.duration || 30))
+                : 36500,
             startDate: activeType === 'reward' 
               ? formData.basics.startDate 
               : new Date().toISOString().split('T')[0]
@@ -480,7 +520,8 @@ export default function CampaignConfiguration() {
             mission: formData.mission,
             urgency: formData.urgency,
             problem: formData.problem.trim(),
-            howItHelps: formData.howItHelps.trim()
+            howItHelps: formData.howItHelps.trim(),
+            includeFundraisingGoal: includeFundraising,
           })
         }
       };
@@ -550,9 +591,9 @@ export default function CampaignConfiguration() {
       return;
     }
 
-    // ~5MB limit for base64 storage in campaign config
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, coverImage: 'Image must be under 5MB' }));
+    // ~50MB limit for cover image upload
+    if (file.size > 50 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, coverImage: 'Image must be under 50MB' }));
       return;
     }
 
@@ -716,6 +757,44 @@ export default function CampaignConfiguration() {
               />
               {errors.tagline && <p className="text-red-500 text-xs mt-1 font-bold">{errors.tagline}</p>}
             </div>
+
+            {activeType === 'donation' && (
+              <div className="mt-8">
+                <label htmlFor="basicsCampaignGoals" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">
+                  Campaign Goals
+                </label>
+                <select
+                  id="basicsCampaignGoals"
+                  className={`w-full md:w-1/2 px-6 py-4 rounded-xl border bg-white font-bold transition-all cursor-pointer ${
+                    errors.campaignGoals ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
+                  }`}
+                  value={formData.basics.campaignGoals}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      basics: { ...prev.basics, campaignGoals: val },
+                      includeFundraisingGoal:
+                        val === 'Raise Funds' ? true : prev.includeFundraisingGoal,
+                    }));
+                    setErrors((prev) => {
+                      if (!prev.campaignGoals) return prev;
+                      const next = { ...prev };
+                      delete next.campaignGoals;
+                      return next;
+                    });
+                  }}
+                >
+                  <option value="">-- Choose Campaign Goal --</option>
+                  {CAMPAIGN_GOAL_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                {errors.campaignGoals && (
+                  <p className="text-red-500 text-xs mt-1 font-bold">{errors.campaignGoals}</p>
+                )}
+              </div>
+            )}
 
             <div className="mt-8">
               <div className="flex items-center gap-2 mb-2">
@@ -1089,7 +1168,36 @@ export default function CampaignConfiguration() {
           {activeType === 'donation' && (
             <>
               <section className="bg-gray-50/50 rounded-[3rem] p-12 border border-gray-100">
-                {renderSectionHeader("Fundraising Goal")}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                  {renderSectionHeader("Fundraising Goal")}
+                  <label className="inline-flex items-center gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formData.includeFundraisingGoal !== false}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormData((prev) => ({
+                          ...prev,
+                          includeFundraisingGoal: checked,
+                        }));
+                        if (!checked) {
+                          setErrors((prev) => {
+                            const next = { ...prev };
+                            delete next.goal;
+                            delete next.duration;
+                            return next;
+                          });
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-black uppercase tracking-widest text-gray-700">
+                      Include fundraising goal
+                    </span>
+                  </label>
+                </div>
+
+                {formData.includeFundraisingGoal !== false ? (
                 <div className="grid md:grid-cols-3 gap-6">
                    <div>
                      <label htmlFor="basicsGoal" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Donation Goal</label>
@@ -1097,7 +1205,7 @@ export default function CampaignConfiguration() {
                       id="basicsGoal"
                       type="number" 
                       placeholder="Goal amount" 
-                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold transition-all ${
+                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold text-gray-900 transition-all ${
                         errors.goal ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.basics.goal}
@@ -1109,7 +1217,7 @@ export default function CampaignConfiguration() {
                      <label htmlFor="basicsDuration" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Campaign Duration</label>
                      <select 
                       id="basicsDuration"
-                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold transition-all ${
+                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold text-gray-900 transition-all ${
                         errors.duration ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.basics.duration}
@@ -1127,7 +1235,7 @@ export default function CampaignConfiguration() {
                      <label htmlFor="donationUrgency" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Urgency Level</label>
                      <select 
                       id="donationUrgency"
-                      className="w-full px-6 py-4 rounded-xl border border-gray-200 bg-white font-bold"
+                      className="w-full px-6 py-4 rounded-xl border border-gray-200 bg-white font-bold text-gray-900"
                       value={formData.urgency}
                       onChange={e => setFormData({...formData, urgency: e.target.value})}
                      >
@@ -1137,34 +1245,45 @@ export default function CampaignConfiguration() {
                      </select>
                    </div>
                 </div>
+                ) : (
+                  <p className="text-sm font-semibold text-gray-500">
+                    Fundraising goal fields are hidden. Turn the checkbox on if you want to set a donation goal, duration, and urgency.
+                  </p>
+                )}
               </section>
 
               <section className="bg-gray-50/50 rounded-[3rem] p-12 border border-gray-100">
-                {renderSectionHeader("Impact Story")}
+                {renderSectionHeader("Campaign Details")}
                 <div className="space-y-8">
                   <div>
-                    <label htmlFor="problemDesc" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Problem Description</label>
+                    <label htmlFor="problemDesc" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Campaign Description</label>
                     <textarea 
                       id="problemDesc"
                       rows={4} 
-                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold resize-none transition-all ${
+                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold text-gray-900 resize-none transition-all ${
                         errors.problem ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.problem}
-                      onChange={e => setFormData({...formData, problem: sanitizeDescription(e.target.value, 2000)})}
+                      onChange={e => {
+                        const next = sanitizeDescription(e.target.value, 2000);
+                        setFormData((prev) => ({ ...prev, problem: next }));
+                      }}
                     />
                     {errors.problem && <p className="text-red-500 text-xs mt-1 font-bold">{errors.problem}</p>}
                   </div>
                   <div>
-                    <label htmlFor="howDonationsHelp" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">How Donations Help</label>
+                    <label htmlFor="howDonationsHelp" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Detailed Campaign Goal</label>
                     <textarea 
                       id="howDonationsHelp"
                       rows={4} 
-                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold resize-none transition-all ${
+                      className={`w-full px-6 py-4 rounded-xl border bg-white font-bold text-gray-900 resize-none transition-all ${
                         errors.howItHelps ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-yellow-500'
                       }`}
                       value={formData.howItHelps}
-                      onChange={e => setFormData({...formData, howItHelps: sanitizeDescription(e.target.value, 2000)})}
+                      onChange={e => {
+                        const next = sanitizeDescription(e.target.value, 2000);
+                        setFormData((prev) => ({ ...prev, howItHelps: next }));
+                      }}
                     />
                     {errors.howItHelps && <p className="text-red-500 text-xs mt-1 font-bold">{errors.howItHelps}</p>}
                   </div>
@@ -1232,7 +1351,7 @@ export default function CampaignConfiguration() {
                             Upload Image
                           </div>
                           <p className="text-xs font-medium text-gray-400 flex items-center gap-1">
-                            <ImageIcon size={12} /> JPG, PNG or WebP · max 5MB
+                            <ImageIcon size={12} /> JPG, PNG or WebP · max 50MB
                           </p>
                         </>
                       )}
@@ -1261,24 +1380,27 @@ export default function CampaignConfiguration() {
                   {errors.videoUrl && <p className="text-red-500 text-xs mt-1 font-bold">{errors.videoUrl}</p>}
                 </div>
                 <div>
-                  <label htmlFor="storyText" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Brief Story</label>
+                  <label htmlFor="storyText" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Additional Campaign Information</label>
                   <div className="border border-gray-200 rounded-2xl bg-white overflow-hidden">
                     <div className="flex items-center gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50/50">
-                       <select className="bg-transparent font-bold text-sm outline-none">
+                       <select className="bg-transparent font-bold text-sm outline-none text-gray-700" disabled aria-hidden="true">
                          <option>Paragraph</option>
-                         <option>Heading 1</option>
                        </select>
                        <div className="w-[1px] h-4 bg-gray-200 mx-2" />
-                       <button className="text-gray-400 hover:text-black font-black">B</button>
-                       <button className="text-gray-400 hover:text-black italic">I</button>
-                       <button className="text-gray-400 hover:text-black underline">U</button>
+                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                         Plain text
+                       </span>
                     </div>
                     <textarea 
                       id="storyText"
                       rows={8} 
-                      className="w-full px-6 py-4 font-bold outline-none resize-none"
+                      className="w-full px-6 py-4 font-bold text-gray-900 outline-none resize-none bg-white"
                       value={formData.story}
-                      onChange={e => setFormData({...formData, story: sanitizeDescription(e.target.value, 5000)})}
+                      onChange={(e) => {
+                        const next = sanitizeDescription(e.target.value, 5000);
+                        setFormData((prev) => ({ ...prev, story: next }));
+                      }}
+                      placeholder="Add any extra campaign details supporters should know…"
                     />
                   </div>
                 </div>

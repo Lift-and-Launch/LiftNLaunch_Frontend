@@ -114,7 +114,7 @@ export default function FreeTrialOfferSection() {
           className="mt-4 text-center text-[11px] font-semibold text-gray-500"
           data-trial-animate
         >
-          Starter plan after trial · ${"28.88"}/mo · no Expert add-ons required
+          Starter plan after trial · $39/mo · no Expert add-ons required
         </p>
       </div>
     </section>

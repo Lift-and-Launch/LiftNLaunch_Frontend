@@ -10,6 +10,11 @@ import {
   TRIAL_PERIOD_DAYS,
   getPlanCheckoutCta,
   shouldRequestStarterTrial,
+  fetchSubscriptionPlans,
+  getTiersByFamily,
+  isComplimentaryActive,
+  isComplimentaryScheduled,
+  getComplimentaryAccess,
 } from "../utils/plans";
 import {
   fetchEntitlements,
@@ -37,9 +42,13 @@ const checkIcon = (
   </svg>
 );
 
+type PricingTier = typeof SAAS_PRICING_TIERS;
+
 export default function Pricing() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [tiers, setTiers] = useState<PricingTier>(SAAS_PRICING_TIERS);
+  const [plansLoading, setPlansLoading] = useState(true);
   const [entitlements, setEntitlements] = useState<Record<string, unknown> | null>(
     null
   );
@@ -55,6 +64,24 @@ export default function Pricing() {
       sessionStorage.setItem(PRICING_RETURN_KEY, fromState);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setPlansLoading(true);
+      try {
+        const { tiers: live } = await fetchSubscriptionPlans();
+        if (!cancelled && live?.length) setTiers(live as PricingTier);
+      } catch (err) {
+        console.warn("Could not load live plan prices; using fallbacks:", err);
+      } finally {
+        if (!cancelled) setPlansLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -84,10 +111,23 @@ export default function Pricing() {
     navigate(target, { replace: true });
   };
 
+  const complimentary = getComplimentaryAccess(entitlements) || getComplimentaryAccess(user);
+  const complimentaryActive =
+    isComplimentaryActive(entitlements) || isComplimentaryActive(user);
+  const complimentaryScheduled =
+    isComplimentaryScheduled(entitlements) || isComplimentaryScheduled(user);
+
   const handleGetStarted = async (planId: string) => {
     if (!user) {
       toast.error("Please sign in to continue with checkout.");
       navigate("/signin", { state: { from: location } });
+      return;
+    }
+
+    if (complimentaryActive) {
+      toast.error(
+        "You already have complimentary Pro Elite access. No Stripe checkout is needed."
+      );
       return;
     }
 
@@ -114,8 +154,39 @@ export default function Pricing() {
   };
 
   const alreadySubscribed = !!(
-    entitlements?.isSubscribed && !isTrialing(entitlements)
+    (entitlements?.isSubscribed && !isTrialing(entitlements)) ||
+    complimentaryActive
   );
+
+  const familyGroups = getTiersByFamily(tiers);
+
+  const complimentaryNote = (() => {
+    if (complimentaryActive && complimentary) {
+      const ends = complimentary.endsAt
+        ? new Date(complimentary.endsAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : null;
+      return ends
+        ? `Complimentary Pro Elite is active until ${ends}.`
+        : "Complimentary Pro Elite is active on your account.";
+    }
+    if (complimentaryScheduled && complimentary) {
+      const starts = complimentary.startsAt
+        ? new Date(complimentary.startsAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : null;
+      return starts
+        ? `Free Pro Elite is scheduled to start on ${starts} after your current plan ends.`
+        : "Free Pro Elite is scheduled to start after your current plan ends.";
+    }
+    return null;
+  })();
 
   return (
     <div className="w-full bg-white">
@@ -136,15 +207,18 @@ export default function Pricing() {
 
           <div className="text-center mb-6 md:mb-8">
             <p className="text-xs font-semibold text-yellow-600 uppercase tracking-wide mb-1">
-              LaunchVault Plans
+              LaunchVault · Coach · Bundles
             </p>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1.5">
-              Choose Your SaaS Plan
+              Choose Your Plan
             </h1>
             <p className="text-gray-600 text-sm md:text-base max-w-xl mx-auto">
-              Start with a {TRIAL_PERIOD_DAYS}-day Starter trial, or go straight to Growth / Pro Elite.
-              Card on file at checkout · 1.5% Connect fee.
+              Start with a {TRIAL_PERIOD_DAYS}-day LaunchVault Starter trial, or pick Growth, Pro Elite,
+              Coach-only, or a Bundle. Card on file at checkout · 1.5% Connect fee.
             </p>
+            {plansLoading && (
+              <p className="mt-2 text-[11px] font-semibold text-gray-400">Loading live prices…</p>
+            )}
             {isTrialing(entitlements) && (
               <p className="mt-3 inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-4 py-1.5 text-xs font-bold text-amber-900">
                 Free trial —{" "}
@@ -153,119 +227,141 @@ export default function Pricing() {
                   : "active"}
               </p>
             )}
+            {complimentaryNote && (
+              <p className="mt-3 inline-flex items-center rounded-full bg-indigo-50 border border-indigo-200 px-4 py-1.5 text-xs font-bold text-indigo-900">
+                {complimentaryNote}
+              </p>
+            )}
           </div>
 
-          <div className="flex flex-col lg:flex-row items-stretch justify-center gap-5 lg:gap-6 pt-2">
-            {SAAS_PRICING_TIERS.map((tier) => {
-              const isFeatured = tier.isFeatured;
-              const isHovered = hovered === tier.id;
-              const busy = loadingPlan === tier.id;
-              const cta = getPlanCheckoutCta(tier, entitlements);
-              const showTrialBadge =
-                tier.id === "starter" &&
-                tier.trialEligible &&
-                !entitlements?.trialUsed;
-
-              return (
-                <div
-                  key={tier.id}
-                  onMouseEnter={() => setHovered(tier.id)}
-                  onMouseLeave={() => setHovered(null)}
-                  className={[
-                    "relative flex flex-col rounded-2xl border bg-white w-full lg:max-w-[340px]",
-                    "transition-all duration-300 ease-in-out",
-                    isFeatured
-                      ? "border-yellow-400 shadow-xl ring-2 ring-yellow-400/40 lg:-mt-1 z-10"
-                      : "border-gray-200 shadow-md",
-                    isHovered && !isFeatured ? "-translate-y-1 shadow-lg" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  {tier.isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30">
-                      <span className="bg-yellow-400 text-black text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-md whitespace-nowrap">
-                        Most popular
-                      </span>
-                    </div>
-                  )}
-                  {showTrialBadge && (
-                    <div
-                      className={`absolute z-20 ${
-                        tier.isPopular ? "top-3 right-3" : "-top-3 left-1/2 -translate-x-1/2"
-                      }`}
-                    >
-                      <span className="bg-amber-100 text-amber-900 border border-amber-200 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap">
-                        {TRIAL_PERIOD_DAYS}-day free trial
-                      </span>
-                    </div>
-                  )}
-
-                  <div
-                    className={`w-full rounded-t-2xl px-5 py-5 ${
-                      isFeatured
-                        ? "bg-yellow-400 text-black"
-                        : "bg-yellow-50 text-gray-900"
-                    }`}
-                  >
-                    <h2 className="font-bold text-xl">{tier.name}</h2>
-                    <div className="mt-2 flex items-baseline gap-1 flex-wrap">
-                      <span className="font-extrabold text-3xl">{tier.price}</span>
-                      <span
-                        className={`text-sm font-medium ${
-                          isFeatured ? "text-black/70" : "text-gray-600"
-                        }`}
-                      >
-                        / {tier.period}
-                      </span>
-                    </div>
-                    {tier.id === "starter" && showTrialBadge && (
-                      <p
-                        className={`mt-2 text-xs font-semibold ${
-                          isFeatured ? "text-black/70" : "text-gray-600"
-                        }`}
-                      >
-                        Then {tier.price}/{tier.period} · cancel anytime during trial
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col flex-1 px-5 pt-4 pb-5 gap-3">
-                    <ul className="flex flex-col gap-2.5 flex-1">
-                      {tier.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2">
-                          <span className="text-yellow-500 mt-0.5">{checkIcon}</span>
-                          <span className="text-sm text-gray-700 leading-snug">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button
-                      type="button"
-                      disabled={!!loadingPlan || alreadySubscribed}
-                      onClick={() => handleGetStarted(tier.id)}
-                      className={`mt-3 w-full py-2.5 rounded-full text-sm font-semibold transition-all duration-200 disabled:opacity-60 ${
-                        busy
-                          ? "cursor-wait"
-                          : alreadySubscribed
-                            ? "cursor-not-allowed"
-                            : "cursor-pointer"
-                      } ${
-                        isFeatured
-                          ? "bg-gray-900 hover:bg-black text-white"
-                          : "bg-yellow-400 hover:bg-yellow-500 text-black"
-                      }`}
-                    >
-                      {busy
-                        ? "Redirecting…"
-                        : alreadySubscribed
-                          ? "Already subscribed"
-                          : cta}
-                    </button>
-                  </div>
+          <div className="space-y-12">
+            {familyGroups.map((group) => (
+              <div key={group.id}>
+                <div className="text-center mb-5">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">{group.label}</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">{group.description}</p>
                 </div>
-              );
-            })}
+
+                <div className="flex flex-col lg:flex-row items-stretch justify-center gap-5 lg:gap-6 pt-2 flex-wrap">
+                  {group.tiers.map((tier) => {
+                    const isFeatured = tier.isFeatured;
+                    const isHovered = hovered === tier.id;
+                    const busy = loadingPlan === tier.id;
+                    const cta = getPlanCheckoutCta(tier, entitlements);
+                    const showTrialBadge =
+                      tier.id === "starter" &&
+                      tier.trialEligible &&
+                      !entitlements?.trialUsed;
+
+                    return (
+                      <div
+                        key={tier.id}
+                        onMouseEnter={() => setHovered(tier.id)}
+                        onMouseLeave={() => setHovered(null)}
+                        className={[
+                          "relative flex flex-col rounded-2xl border bg-white w-full lg:max-w-[340px]",
+                          "transition-all duration-300 ease-in-out",
+                          isFeatured
+                            ? "border-yellow-400 shadow-xl ring-2 ring-yellow-400/40 lg:-mt-1 z-10"
+                            : "border-gray-200 shadow-md",
+                          isHovered && !isFeatured ? "-translate-y-1 shadow-lg" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                      >
+                        {tier.isPopular && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30">
+                            <span className="bg-yellow-400 text-black text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-md whitespace-nowrap">
+                              Most popular
+                            </span>
+                          </div>
+                        )}
+                        {showTrialBadge && (
+                          <div
+                            className={`absolute z-20 ${
+                              tier.isPopular
+                                ? "top-3 right-3"
+                                : "-top-3 left-1/2 -translate-x-1/2"
+                            }`}
+                          >
+                            <span className="bg-amber-100 text-amber-900 border border-amber-200 text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap">
+                              {TRIAL_PERIOD_DAYS}-day free trial
+                            </span>
+                          </div>
+                        )}
+
+                        <div
+                          className={`w-full rounded-t-2xl px-5 py-5 ${
+                            isFeatured
+                              ? "bg-yellow-400 text-black"
+                              : "bg-yellow-50 text-gray-900"
+                          }`}
+                        >
+                          <h3 className="font-bold text-xl">{tier.name}</h3>
+                          <div className="mt-2 flex items-baseline gap-1 flex-wrap">
+                            <span className="font-extrabold text-3xl">{tier.price}</span>
+                            <span
+                              className={`text-sm font-medium ${
+                                isFeatured ? "text-black/70" : "text-gray-600"
+                              }`}
+                            >
+                              / {tier.period}
+                            </span>
+                          </div>
+                          {tier.id === "starter" && showTrialBadge && (
+                            <p
+                              className={`mt-2 text-xs font-semibold ${
+                                isFeatured ? "text-black/70" : "text-gray-600"
+                              }`}
+                            >
+                              Then {tier.price}/{tier.period} · cancel anytime during trial
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col flex-1 px-5 pt-4 pb-5 gap-3">
+                          <ul className="flex flex-col gap-2.5 flex-1">
+                            {tier.features.map((feature) => (
+                              <li key={feature} className="flex items-start gap-2">
+                                <span className="text-yellow-500 mt-0.5">{checkIcon}</span>
+                                <span className="text-sm text-gray-700 leading-snug">
+                                  {feature}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <button
+                            type="button"
+                            disabled={!!loadingPlan || alreadySubscribed}
+                            onClick={() => handleGetStarted(tier.id)}
+                            className={`mt-3 w-full py-2.5 rounded-full text-sm font-semibold transition-all duration-200 disabled:opacity-60 ${
+                              busy
+                                ? "cursor-wait"
+                                : alreadySubscribed
+                                  ? "cursor-not-allowed"
+                                  : "cursor-pointer"
+                            } ${
+                              isFeatured
+                                ? "bg-gray-900 hover:bg-black text-white"
+                                : "bg-yellow-400 hover:bg-yellow-500 text-black"
+                            }`}
+                          >
+                            {busy
+                              ? "Redirecting…"
+                              : alreadySubscribed
+                                ? complimentaryActive
+                                  ? "Complimentary access active"
+                                  : "Already subscribed"
+                                : cta}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

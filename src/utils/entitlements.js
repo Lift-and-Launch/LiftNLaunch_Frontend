@@ -2,6 +2,7 @@ import api from "../api/axios";
 import toast from "react-hot-toast";
 import { goToPricing } from "./pricingNavigation";
 import { isUserTrialing } from "./subscription";
+import { isComplimentaryActive } from "./plans";
 
 /**
  * GET /subscription/entitlements — plan limits + feature flags + usage + trial.
@@ -14,6 +15,31 @@ export async function fetchEntitlements() {
   throw new Error(res.data?.message || "Failed to load entitlements");
 }
 
+/** Default cancel — keep access until trial/period end. */
+export async function cancelSubscription({ immediate = false } = {}) {
+  const body = immediate ? { immediate: true } : {};
+  const res = await api.post("/subscription/cancel", body);
+  if (res.data?.success) return res.data;
+  throw new Error(res.data?.message || "Could not cancel subscription");
+}
+
+/** Undo scheduled cancel while still active / trialing. */
+export async function resumeSubscription() {
+  const res = await api.post("/subscription/resume");
+  if (res.data?.success) return res.data;
+  throw new Error(res.data?.message || "Could not resume subscription");
+}
+
+/** Grant complimentary Pro Elite (superadmin + OTP session). */
+export async function grantComplimentaryAccess({ email, days }) {
+  const res = await api.post("/admin/users/complimentary-access", {
+    email: String(email || "").trim().toLowerCase(),
+    days: Number(days),
+  });
+  if (res.data?.success) return res.data;
+  throw new Error(res.data?.message || "Could not grant complimentary access");
+}
+
 export function isTrialing(entitlements) {
   return !!(
     entitlements?.isTrialing ||
@@ -21,9 +47,10 @@ export function isTrialing(entitlements) {
   );
 }
 
-/** Trial users are treated as approved for campaign create / builder access. */
+/** Trial / complimentary users are treated as approved for campaign create / builder access. */
 export function hasCampaignBuilderAccess(user, entitlements) {
   if (isTrialing(entitlements) || isUserTrialing(user)) return true;
+  if (isComplimentaryActive(entitlements) || isComplimentaryActive(user)) return true;
   return user?.adminApprovalStatus === "approved";
 }
 
