@@ -147,6 +147,8 @@ export const coachApi = {
   // Licensing & referrals
   getLicensing: (caseId, params) =>
     api.get(`/coach/cases/${caseId}/licensing`, { params }).then(unwrap),
+  suggestLicensing: (caseId) =>
+    api.post(`/coach/cases/${caseId}/licensing/suggestions`).then(unwrap),
   listReferrals: (caseId) => api.get(`/coach/cases/${caseId}/referrals`).then(unwrap),
   createReferral: (caseId, body) =>
     api.post(`/coach/cases/${caseId}/referrals`, body).then(unwrap),

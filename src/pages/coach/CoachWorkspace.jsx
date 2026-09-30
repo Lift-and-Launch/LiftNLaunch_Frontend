@@ -35,6 +35,7 @@ export default function CoachWorkspace() {
   const [outcomes, setOutcomes] = useState([]);
   const [licensing, setLicensing] = useState(null);
   const [referrals, setReferrals] = useState([]);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
   const [investor, setInvestor] = useState(null);
   const loadedTabsRef = useRef({ documents: false, outcomes: false, licensing: false, investor: false });
 
@@ -87,6 +88,8 @@ export default function CoachWorkspace() {
 
   useEffect(() => {
     loadedTabsRef.current = { documents: false, outcomes: false, licensing: false, investor: false };
+    setAiSuggestions(null);
+    setInfo('');
     setLoading(false);
     setError(null);
   }, [caseId]);
@@ -175,6 +178,22 @@ export default function CoachWorkspace() {
     try {
       await coachApi.createReferral(caseId, { resourceId, status: 'identified' });
       await refreshActiveTab();
+    } catch (err) {
+      setError(parseCoachError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runLicensingSuggestions = async () => {
+    setBusy(true);
+    setError(null);
+    setInfo('');
+    try {
+      await runWithConsent(async () => {
+        const res = await coachApi.suggestLicensing(caseId);
+        setAiSuggestions(res.data || res);
+      });
     } catch (err) {
       setError(parseCoachError(err));
     } finally {
@@ -396,33 +415,126 @@ export default function CoachWorkspace() {
                     {licDisclaimer}
                   </p>
                 )}
-                <p className="text-sm text-gray-500 font-medium">
-                  Recommendations come only from the approved Lift & Launch directory.
-                </p>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {resources.length === 0 ? (
-                    <p className="text-sm text-gray-500 md:col-span-2">No licensing resources available yet.</p>
-                  ) : (
-                    resources.map((r) => (
-                      <article key={r._id || r.id} className="p-5 rounded-2xl border border-gray-100 space-y-3">
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-600">
-                            {r.type || r.category}
-                          </p>
-                          <h3 className="font-black text-gray-900">{r.name}</h3>
-                          <p className="text-sm text-gray-500 mt-1">{r.description || r.guidance}</p>
-                        </div>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => addReferral(r._id || r.id)}
-                          className={`${coachLink} text-xs font-black uppercase tracking-widest text-yellow-700`}
-                        >
-                          Track referral →
-                        </button>
-                      </article>
-                    ))
+
+                <section className="space-y-4 p-5 rounded-2xl border border-dashed border-yellow-200 bg-yellow-50/40">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-yellow-700">
+                        AI suggestions from your intake
+                      </h3>
+                      <p className="text-sm text-gray-600 font-medium mt-1">
+                        Uses your business details to suggest likely licenses/permits to verify.
+                        These are <span className="font-bold">not</span> approved referrals.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={runLicensingSuggestions}
+                      disabled={busy}
+                      className={`${coachBtn} inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-500 text-xs font-black uppercase tracking-widest hover:shadow-md`}
+                    >
+                      {busy ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
+                      Suggest from intake
+                    </button>
+                  </div>
+
+                  {aiSuggestions?.disclaimer && (
+                    <p className="text-xs font-bold text-gray-700 bg-white/80 border border-yellow-100 rounded-xl px-3 py-2">
+                      {aiSuggestions.disclaimer}
+                    </p>
                   )}
+
+                  {Array.isArray(aiSuggestions?.suggestions) && aiSuggestions.suggestions.length > 0 ? (
+                    <div className="grid md:grid-cols-2 gap-3">
+                      {aiSuggestions.suggestions.map((s, idx) => (
+                        <article
+                          key={`${s.name}-${idx}`}
+                          className="p-4 rounded-xl bg-white border border-yellow-100 space-y-2"
+                        >
+                          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-600">
+                            {s.type || s.category} · review only
+                          </p>
+                          <h4 className="font-black text-gray-900 text-sm">{s.name}</h4>
+                          {s.whyRelevant && (
+                            <p className="text-sm text-gray-600">{s.whyRelevant}</p>
+                          )}
+                          {s.verifyOn && (
+                            <p className="text-xs text-gray-500">
+                              <span className="font-bold text-gray-700">Verify on:</span> {s.verifyOn}
+                            </p>
+                          )}
+                          {s.searchHint && (
+                            <p className="text-xs text-gray-500">
+                              <span className="font-bold text-gray-700">Search:</span> {s.searchHint}
+                            </p>
+                          )}
+                          {s.officialUrlHint ? (
+                            <a
+                              href={s.officialUrlHint}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`${coachLink} text-xs font-black uppercase tracking-widest text-yellow-700`}
+                            >
+                              Open official link →
+                            </a>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No AI suggestions yet. Complete intake, then run “Suggest from intake.”
+                    </p>
+                  )}
+
+                  {Array.isArray(aiSuggestions?.openQuestions) && aiSuggestions.openQuestions.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
+                        Open questions
+                      </p>
+                      <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                        {aiSuggestions.openQuestions.map((q) => (
+                          <li key={q}>{q}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </section>
+
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
+                    Approved directory
+                  </h3>
+                  <p className="text-sm text-gray-500 font-medium mb-4">
+                    Referral tracking is only available for Lift & Launch approved resources.
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {resources.length === 0 ? (
+                      <p className="text-sm text-gray-500 md:col-span-2">
+                        No approved licensing resources available yet.
+                      </p>
+                    ) : (
+                      resources.map((r) => (
+                        <article key={r._id || r.id} className="p-5 rounded-2xl border border-gray-100 space-y-3">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-yellow-600">
+                              {r.type || r.category}
+                            </p>
+                            <h3 className="font-black text-gray-900">{r.name}</h3>
+                            <p className="text-sm text-gray-500 mt-1">{r.description || r.guidance}</p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => addReferral(r._id || r.id)}
+                            className={`${coachLink} text-xs font-black uppercase tracking-widest text-yellow-700`}
+                          >
+                            Track referral →
+                          </button>
+                        </article>
+                      ))
+                    )}
+                  </div>
                 </div>
 
                 <section>
