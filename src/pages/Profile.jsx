@@ -19,9 +19,20 @@ import {
 } from "lucide-react";
 import api from "../api/axios";
 import { goToPricing } from "../utils/pricingNavigation";
-import { fetchEntitlements, isTrialing } from "../utils/entitlements";
+import {
+  fetchEntitlements,
+  isTrialing,
+  cancelSubscription,
+  resumeSubscription,
+} from "../utils/entitlements";
 import TrialBanner from "../components/TrialBanner";
-import { formatPlanLabel, isUnlimitedCampaigns } from "../utils/plans";
+import {
+  formatPlanLabel,
+  isUnlimitedCampaigns,
+  getComplimentaryAccess,
+  isComplimentaryActive,
+  isComplimentaryScheduled,
+} from "../utils/plans";
 
 const btnBase =
   "cursor-pointer transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
@@ -245,16 +256,40 @@ export default function Profile() {
     setActionSuccess("");
     setActionLoading("cancel");
     try {
-      const res = await api.post("/subscription/cancel");
-      if (res.data.success) {
-        setCancelOpen(false);
-        setActionSuccess("Subscription cancelled.");
-        await refreshUser();
-      } else {
-        setCancelError(res.data.message || "Could not cancel subscription.");
-      }
+      const res = await cancelSubscription();
+      setCancelOpen(false);
+      const until =
+        res?.accessUntil ||
+        res?.data?.accessUntil ||
+        res?.currentPeriodEnd ||
+        res?.data?.currentPeriodEnd;
+      setActionSuccess(
+        until
+          ? `Cancellation scheduled. Access continues until ${new Date(until).toLocaleDateString()}.`
+          : "Cancellation scheduled. You’ll keep access until the current period ends."
+      );
+      const data = await fetchEntitlements();
+      setEntitlements(data);
+      await refreshUser();
     } catch (err) {
-      setCancelError(err.response?.data?.message || "Could not cancel subscription.");
+      setCancelError(err.response?.data?.message || err.message || "Could not cancel subscription.");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleResumeSubscription = async () => {
+    setActionError("");
+    setActionSuccess("");
+    setActionLoading("resume");
+    try {
+      await resumeSubscription();
+      setActionSuccess("Subscription resumed. Auto-renew is on again.");
+      const data = await fetchEntitlements();
+      setEntitlements(data);
+      await refreshUser();
+    } catch (err) {
+      setActionError(err.response?.data?.message || err.message || "Could not resume subscription.");
     } finally {
       setActionLoading("");
     }
@@ -325,14 +360,38 @@ export default function Profile() {
   }
 
   // Calculate remaining days
+  const complimentary =
+    getComplimentaryAccess(entitlements) || getComplimentaryAccess(user);
+  const complimentaryActive =
+    isComplimentaryActive(entitlements) || isComplimentaryActive(user);
+  const complimentaryScheduled =
+    isComplimentaryScheduled(entitlements) || isComplimentaryScheduled(user);
+
   const isSubscribed =
     entitlements?.isSubscribed ||
     user.isSubscribed ||
-    user.subscription?.isSubscribed;
+    user.subscription?.isSubscribed ||
+    complimentaryActive;
   const trialing = isTrialing(entitlements);
+  const cancelAtPeriodEnd = !!(
+    entitlements?.cancelAtPeriodEnd ||
+    user.subscription?.cancelAtPeriodEnd ||
+    user.cancelAtPeriodEnd
+  );
+  const accessUntil =
+    entitlements?.accessUntil ||
+    user.subscription?.accessUntil ||
+    entitlements?.currentPeriodEnd ||
+    user.subscription?.currentPeriodEnd;
   const currentPeriodEnd =
-    entitlements?.trialEndsAt || user.subscription?.currentPeriodEnd;
-  const planKey = entitlements?.plan || user.subscription?.plan || "none";
+    (trialing && entitlements?.trialEndsAt) ||
+    accessUntil ||
+    user.subscription?.currentPeriodEnd;
+  const planKey =
+    (complimentaryActive && complimentary?.plan) ||
+    entitlements?.plan ||
+    user.subscription?.plan ||
+    "none";
   const planName = formatPlanLabel(planKey);
   const subStatus =
     entitlements?.subscriptionStatus ||
@@ -354,14 +413,28 @@ export default function Profile() {
   if (trialing && typeof entitlements?.trialDaysRemaining === "number") {
     daysLeft = entitlements.trialDaysRemaining;
   }
+  if (complimentaryActive && complimentary?.endsAt) {
+    const end = new Date(complimentary.endsAt);
+    formattedExpiry = end.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    daysLeft = Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  }
 
   const getPlanBadgeStyles = (plan) => {
     switch (String(plan || "").toLowerCase()) {
       case "pro_elite":
+      case "coach_pro_elite":
+      case "bundle_elite":
         return "bg-gradient-to-r from-[#001d59] to-indigo-700 text-white";
       case "growth":
+      case "coach_growth":
+      case "bundle_growth":
         return "bg-gradient-to-r from-yellow-400 to-amber-500 text-black";
       case "starter":
+      case "coach_starter":
         return "bg-gradient-to-r from-slate-700 to-slate-900 text-white";
       default:
         return "bg-gray-100 text-gray-600";
@@ -399,7 +472,7 @@ export default function Profile() {
       <ConfirmModal
         open={cancelOpen}
         title="Cancel subscription?"
-        description="You’ll lose premium access to templates, custom domains, split testing, and campaign tools. You can re-subscribe anytime from Pricing."
+        description="You’ll keep access until the trial or billing period ends. You can resume before then if you change your mind."
         icon={Ban}
         accent="amber"
         confirmLabel="Cancel subscription"
@@ -491,28 +564,78 @@ export default function Profile() {
                   <div className={`p-6 rounded-3xl ${getPlanBadgeStyles(planKey)} flex items-center justify-between shadow-lg relative overflow-hidden group`}>
                     <div className="space-y-1 relative z-10">
                       <span className="text-[9px] font-black uppercase tracking-widest opacity-80">
-                        {trialing ? "Free Trial" : "Active Plan"}
+                        {complimentaryActive
+                          ? "Complimentary access"
+                          : trialing
+                            ? "Free Trial"
+                            : "Active Plan"}
                       </span>
                       <h4 className="text-2xl font-black uppercase tracking-tight">{planName}</h4>
                       <p className="text-[10px] font-bold opacity-90">
-                        {trialing
-                          ? `Trial ends ${formattedExpiry} · then ${planName} billing`
-                          : "Auto-renews next cycle · 1.5% Connect fee"}
+                        {complimentaryActive
+                          ? `Free Pro Elite · ends ${formattedExpiry}`
+                          : trialing
+                            ? `Trial ends ${formattedExpiry} · then ${planName} billing`
+                            : cancelAtPeriodEnd
+                              ? `Ends on ${formattedExpiry} · auto-renew off`
+                              : "Auto-renews next cycle · 1.5% Connect fee"}
                       </p>
                     </div>
                     <CreditCard size={48} className="opacity-15 absolute right-6 top-1/2 -translate-y-1/2" />
                   </div>
 
+                  {complimentaryScheduled && complimentary?.startsAt && (
+                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs font-semibold text-indigo-900">
+                      Free Pro Elite is scheduled to start on{" "}
+                      {new Date(complimentary.startsAt).toLocaleDateString(undefined, {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                      . Your current paid plan stays active until then.
+                    </div>
+                  )}
+
+                  {cancelAtPeriodEnd && !complimentaryActive && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <span>
+                        Subscription ends on{" "}
+                        {accessUntil
+                          ? new Date(accessUntil).toLocaleDateString(undefined, {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : formattedExpiry}
+                        . You keep access until then.
+                      </span>
+                      <button
+                        type="button"
+                        disabled={actionLoading === "resume"}
+                        onClick={handleResumeSubscription}
+                        className="shrink-0 px-4 py-2 bg-white border border-amber-300 text-amber-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 cursor-pointer disabled:opacity-60"
+                      >
+                        {actionLoading === "resume" ? "Resuming…" : "Resume subscription"}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                     <div className="space-y-1">
                       <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">Subscription Status</span>
-                      <div className={`flex items-center gap-1.5 text-xs font-black uppercase ${trialing ? "text-amber-600" : "text-green-600"}`}>
-                        <CheckCircle2 size={16} /> {subStatus}
+                      <div className={`flex items-center gap-1.5 text-xs font-black uppercase ${trialing || cancelAtPeriodEnd ? "text-amber-600" : "text-green-600"}`}>
+                        <CheckCircle2 size={16} /> {complimentaryActive ? "complimentary" : subStatus}
                       </div>
                     </div>
                     <div className="space-y-1">
                       <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block">
-                        {trialing ? "Trial Ends" : "Renewal Date"}
+                        {complimentaryActive
+                          ? "Access Ends"
+                          : cancelAtPeriodEnd
+                            ? "Access Until"
+                            : trialing
+                              ? "Trial Ends"
+                              : "Renewal Date"}
                       </span>
                       <div className="flex items-center gap-1.5 text-xs font-black text-gray-800">
                         <Calendar size={16} className="text-gray-400" /> {formattedExpiry}
@@ -544,7 +667,7 @@ export default function Profile() {
                       <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Time Remaining</span>
                       <span className="text-sm font-black text-gray-900">
                         {daysLeft > 0
-                          ? `${daysLeft} Days Left${trialing ? " (trial)" : ""}`
+                          ? `${daysLeft} Days Left${trialing ? " (trial)" : complimentaryActive ? " (comp)" : ""}`
                           : "Expired / Suspended"}
                       </span>
                     </div>
@@ -557,7 +680,16 @@ export default function Profile() {
                         style={{
                           width: `${Math.min(
                             100,
-                            Math.max(0, (daysLeft / (trialing ? 15 : 30)) * 100)
+                            Math.max(
+                              0,
+                              (daysLeft /
+                                (trialing
+                                  ? 15
+                                  : complimentaryActive && complimentary?.durationDays
+                                    ? complimentary.durationDays
+                                    : 30)) *
+                                100
+                            )
                           )}%`,
                         }}
                       />
@@ -581,14 +713,16 @@ export default function Profile() {
                           →
                         </span>
                       </button>
-                      <button
-                        type="button"
-                        disabled={actionLoading === "cancel"}
-                        onClick={openCancelModal}
-                        className="w-full sm:w-auto px-6 py-3 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        {actionLoading === "cancel" ? "Cancelling..." : "Cancel Subscription"}
-                      </button>
+                      {!complimentaryActive && !cancelAtPeriodEnd && (
+                        <button
+                          type="button"
+                          disabled={actionLoading === "cancel"}
+                          onClick={openCancelModal}
+                          className="w-full sm:w-auto px-6 py-3 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-50 transition-all disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          {actionLoading === "cancel" ? "Cancelling..." : "Cancel Subscription"}
+                        </button>
+                      )}
                     </div>
                   </div>
 

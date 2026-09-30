@@ -250,7 +250,7 @@ export default function ReviewSubmitCampaign() {
                 <p className="text-sm text-gray-500 font-medium">{campaignConfig.videoUrl || 'No video URL provided'}</p>
               </div>
               <div>
-                <p className="text-sm font-black text-gray-900 mb-1">Brief Story</p>
+                <p className="text-sm font-black text-gray-900 mb-1">Additional Campaign Information</p>
                 <p className="text-sm text-gray-500 font-medium leading-relaxed">
                   {campaignConfig.story || 'No story provided.'}
                 </p>

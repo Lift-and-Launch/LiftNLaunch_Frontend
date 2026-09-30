@@ -23,9 +23,12 @@ import {
   X,
   PlusCircle,
   CheckCircle2,
-  Globe
+  Globe,
+  Gift,
+  Loader2,
 } from "lucide-react";
 import api from "../api/axios";
+import { grantComplimentaryAccess } from "../utils/entitlements";
 
 // ── Friendly Error Message Translator ───────────────────────
 const translateFriendlyError = (err) => {
@@ -158,9 +161,64 @@ export default function AdminDashboardView() {
   const [showUserRejectModal, setShowUserRejectModal] = useState(null); // holds userId
   const [userRejectReason, setUserRejectReason] = useState("");
 
+  // Complimentary Pro Elite grant (superadmin)
+  const [compEmail, setCompEmail] = useState("");
+  const [compDays, setCompDays] = useState("30");
+  const [compLoading, setCompLoading] = useState(false);
+  const [compResult, setCompResult] = useState(null);
+
   // Campaign Inspect Extended States
   const [inspectingAds, setInspectingAds] = useState(null);
   const [loadingInspectingAds, setLoadingInspectingAds] = useState(false);
+
+  const handleGrantComplimentary = async (e) => {
+    e?.preventDefault?.();
+    setError("");
+    setSuccess("");
+    setCompResult(null);
+
+    const email = String(compEmail || "").trim().toLowerCase();
+    const days = Number(compDays);
+    if (!email || !email.includes("@")) {
+      setError("Enter a valid email address for complimentary access.");
+      return;
+    }
+    if (!Number.isInteger(days) || days < 1 || days > 365) {
+      setError("Days must be a whole number from 1 to 365.");
+      return;
+    }
+
+    setCompLoading(true);
+    try {
+      const payload = await grantComplimentaryAccess({ email, days });
+      const data = payload?.data || payload;
+      setCompResult(data);
+      const msg = data?.message || payload?.message || "Complimentary Pro Elite access saved.";
+      if (data?.emailSent === false) {
+        setSuccess(
+          `${msg} Access was saved, but the invite email failed to send — you can retry.`
+        );
+      } else {
+        setSuccess(msg);
+      }
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 403) {
+        setError(
+          "Complimentary access requires a verified superadmin OTP session."
+        );
+      } else if (status === 400) {
+        setError(
+          err.response?.data?.message ||
+            "Invalid email or days (must be a whole number from 1–365)."
+        );
+      } else {
+        setError(translateFriendlyError(err));
+      }
+    } finally {
+      setCompLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (inspectingCampaign) {
@@ -716,6 +774,112 @@ export default function AdminDashboardView() {
         {/* ── User Directory tab ── */}
         {activePage === "users" && (
           <div className="space-y-6 animate-fade-in">
+            {isSuperAdmin && (
+              <form
+                onSubmit={handleGrantComplimentary}
+                className="bg-white p-6 sm:p-8 rounded-[2rem] border border-indigo-100 shadow-sm space-y-5"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <Gift size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-gray-900 tracking-tight">
+                      Complimentary Pro Elite
+                    </h3>
+                    <p className="text-xs font-semibold text-gray-500 mt-1 max-w-2xl">
+                      Grant temporary Pro Elite access without Stripe. If the email has no account,
+                      access starts when they sign up. If they already pay, free Pro Elite is scheduled
+                      after their current plan ends. The backend sends the invite email.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-3 items-end">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={compEmail}
+                      onChange={(e) => setCompEmail(e.target.value)}
+                      placeholder="founder@example.com"
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs font-bold focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">
+                      Days (1–365)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={365}
+                      step={1}
+                      required
+                      value={compDays}
+                      onChange={(e) => setCompDays(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-xs font-bold focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={compLoading}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  >
+                    {compLoading ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" /> Granting…
+                      </>
+                    ) : (
+                      "Grant access"
+                    )}
+                  </button>
+                </div>
+
+                {compResult && (
+                  <div className="rounded-2xl border border-gray-100 bg-slate-50 p-4 text-xs font-semibold text-gray-700 space-y-1.5">
+                    <p>
+                      <span className="font-black uppercase tracking-wider text-gray-400 text-[10px]">
+                        State:{" "}
+                      </span>
+                      {compResult.state || "—"}
+                      {compResult.complimentary?.status
+                        ? ` · ${compResult.complimentary.status}`
+                        : ""}
+                    </p>
+                    {compResult.message && <p>{compResult.message}</p>}
+                    {compResult.state === "scheduled" && (
+                      <p className="text-amber-800">
+                        Current plan: {compResult.currentPlan || "paid"}
+                        {compResult.currentPlanEndsAt
+                          ? ` · ends ${new Date(compResult.currentPlanEndsAt).toLocaleString()}`
+                          : ""}
+                        . Free Pro Elite starts later — do not show Pro Elite as active yet.
+                      </p>
+                    )}
+                    {compResult.emailSent === false && (
+                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <span className="text-amber-700 font-bold">
+                          Invite email failed — grant is saved. Retry to resend.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleGrantComplimentary}
+                          disabled={compLoading}
+                          className="px-3 py-1.5 bg-white border border-amber-200 text-amber-900 rounded-lg text-[10px] font-black uppercase tracking-widest cursor-pointer"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form>
+            )}
+
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <div className="relative">

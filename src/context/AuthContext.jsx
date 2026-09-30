@@ -39,11 +39,20 @@ const buildSession = (payload, extras = {}) => ({
 const mergeApiUser = (existing, apiUser, tokenExtras = {}) => {
   const subscribed =
     apiUser.isSubscribed ?? apiUser.subscription?.isSubscribed ?? existing.isSubscribed ?? false;
+  const complimentaryAccess =
+    apiUser.subscription?.complimentaryAccess ??
+    apiUser.complimentaryAccess ??
+    existing.subscription?.complimentaryAccess ??
+    null;
   return {
     ...existing,
     ...apiUser,
     isSubscribed: Boolean(subscribed),
-    subscription: apiUser.subscription || existing.subscription || null,
+    subscription: {
+      ...(existing.subscription || {}),
+      ...(apiUser.subscription || {}),
+      complimentaryAccess,
+    },
     adminApprovalStatus: apiUser.adminApprovalStatus ?? existing.adminApprovalStatus,
     ...tokenExtras,
   };
@@ -56,6 +65,11 @@ const mergeEntitlementsOntoUser = async (userBase) => {
     const { fetchEntitlements } = await import("../utils/entitlements");
     const ent = await fetchEntitlements();
     if (!ent) return userBase;
+    const complimentaryAccess =
+      ent.complimentaryAccess ??
+      userBase.subscription?.complimentaryAccess ??
+      userBase.complimentaryAccess ??
+      null;
     return {
       ...userBase,
       isSubscribed: Boolean(ent.isSubscribed ?? userBase.isSubscribed),
@@ -64,13 +78,25 @@ const mergeEntitlementsOntoUser = async (userBase) => {
       trialEndsAt: ent.trialEndsAt || null,
       trialDaysRemaining: ent.trialDaysRemaining ?? null,
       subscriptionStatus: ent.subscriptionStatus || userBase.subscriptionStatus,
+      cancelAtPeriodEnd: Boolean(
+        ent.cancelAtPeriodEnd ?? userBase.subscription?.cancelAtPeriodEnd
+      ),
       subscription: {
         ...(userBase.subscription || {}),
         plan: ent.plan || userBase.subscription?.plan,
         isSubscribed: Boolean(ent.isSubscribed),
         subscriptionStatus: ent.subscriptionStatus,
         status: ent.subscriptionStatus,
-        currentPeriodEnd: ent.trialEndsAt || userBase.subscription?.currentPeriodEnd,
+        currentPeriodEnd:
+          ent.accessUntil ||
+          ent.currentPeriodEnd ||
+          ent.trialEndsAt ||
+          userBase.subscription?.currentPeriodEnd,
+        cancelAtPeriodEnd: Boolean(
+          ent.cancelAtPeriodEnd ?? userBase.subscription?.cancelAtPeriodEnd
+        ),
+        accessUntil: ent.accessUntil || userBase.subscription?.accessUntil || null,
+        complimentaryAccess,
       },
     };
   } catch {
