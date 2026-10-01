@@ -347,7 +347,12 @@ export function shouldRequestStarterTrial(entitlements) {
 
 export function isUnlimitedCampaigns(entitlements) {
   if (!entitlements) return false;
-  return entitlements.maxCampaigns == null;
+  const plan = String(entitlements.plan || "").toLowerCase();
+  if (plan === "pro_elite" || plan === "bundle_elite") return true;
+  const max = entitlements.maxCampaigns ?? entitlements.limits?.maxCampaigns;
+  if (max == null || max === -1) return true;
+  if (typeof max === "string" && /unlimited/i.test(max)) return true;
+  return false;
 }
 
 export function canCreateCampaign(entitlements) {

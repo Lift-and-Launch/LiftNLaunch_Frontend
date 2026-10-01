@@ -1,8 +1,12 @@
 import { isCoachRole, isSuperAdmin } from './roles';
 import {
   getComplimentaryAccess,
-  isComplimentaryActive,
+  isComplimentaryActive as planComplimentaryActive,
 } from './plans';
+
+export function isComplimentaryActive(user) {
+  return planComplimentaryActive(user);
+}
 
 /** True when subscription is in Stripe trial (from /auth/me or entitlements merge). */
 export function isUserTrialing(user) {
@@ -22,7 +26,7 @@ export function isUserTrialing(user) {
 export function hasActiveSubscription(user) {
   if (!user) return false;
   if (isUserTrialing(user)) return true;
-  if (isComplimentaryActive(user)) return true;
+  if (planComplimentaryActive(user)) return true;
   return user.isSubscribed === true || user.subscription?.isSubscribed === true;
 }
 
@@ -40,17 +44,13 @@ export function isPremiumStaff(user) {
 /**
  * Premium product features (Business Coach, builders, AI):
  * - coaches / superadmins: always
- * - founders on trial: always (auto-approved during trial)
- * - founders on complimentary Pro Elite: always (admin-granted)
- * - founders: active subscription + admin approval
+ * - founders with an active paid, trial, or complimentary plan: always
  */
 export function canAccessPremiumFeatures(user) {
   if (!user) return false;
   if (isPremiumStaff(user)) return true;
   if (!hasActiveSubscription(user)) return false;
-  if (isUserTrialing(user)) return true;
-  if (isComplimentaryActive(user)) return true;
-  return user.adminApprovalStatus === 'approved';
+  return true;
 }
 
 /** Where to send a user who cannot use a premium route. */
@@ -58,8 +58,6 @@ export function premiumAccessRedirect(user) {
   if (!user) return '/signin';
   if (isPremiumStaff(user)) return null;
   if (!hasActiveSubscription(user)) return '/pricing';
-  if (isUserTrialing(user) || isComplimentaryActive(user)) return null;
-  if (user.adminApprovalStatus !== 'approved') return '/dashboard';
   return null;
 }
 

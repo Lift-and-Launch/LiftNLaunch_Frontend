@@ -32,7 +32,6 @@ import AdminDashboardView from '../components/AdminDashboardView';
 import { canAccessPremiumFeatures, hasActiveSubscription } from '../utils/subscription';
 import {
   fetchEntitlements,
-  hasCampaignBuilderAccess,
   isTrialing,
 } from '../utils/entitlements';
 
@@ -106,7 +105,6 @@ const UserDashboardView = ({ logout, user }) => {
   const planBadge = getSubscriptionBadge(
     entitlements?.plan || user.subscription?.plan
   );
-  const builderAccess = hasCampaignBuilderAccess(user, entitlements);
   const trialing = isTrialing(entitlements);
 
   React.useEffect(() => {
@@ -185,11 +183,6 @@ const UserDashboardView = ({ logout, user }) => {
 
   const handleEditCampaign = (campaign) => {
     const campaignId = campaign._id || campaign.id;
-
-    if (hasActiveSubscription(user) && !builderAccess) {
-      alert("Your account is currently under review by our admin team. You cannot edit or build campaign websites until approved.");
-      return;
-    }
 
     if (campaign.status === 'pending') {
       alert("This campaign is currently pending admin approval. You will be able to access the landing page builder once approved.");
@@ -332,10 +325,6 @@ const UserDashboardView = ({ logout, user }) => {
                         onClick={() => {
                           if (!hasActiveSubscription(user)) {
                             navigate('/pricing');
-                            return;
-                          }
-                          if (!builderAccess) {
-                            alert("Your account is currently under review by our admin team. You cannot create new campaigns until approved.");
                             return;
                           }
                           navigate('/dashboard/campaign/create');
@@ -545,8 +534,8 @@ const UserDashboardView = ({ logout, user }) => {
                                <button
                                  id={`aiAssistant-${campaign._id}`}
                                  onClick={() => {
-                                   if (hasActiveSubscription(user) && !builderAccess) {
-                                     alert("Your account is currently under review by our admin team. AI tools unlock after approval.");
+                                   if (!hasActiveSubscription(user)) {
+                                     goToPricing(navigate, location);
                                      return;
                                    }
                                    navigate(`/dashboard/campaign/${campaign._id}/ai`);
