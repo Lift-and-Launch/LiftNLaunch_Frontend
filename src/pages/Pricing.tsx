@@ -207,14 +207,15 @@ export default function Pricing() {
 
           <div className="text-center mb-6 md:mb-8">
             <p className="text-xs font-semibold text-yellow-600 uppercase tracking-wide mb-1">
-              LaunchVault · Coach · Bundles
+              LaunchVault
+              {/* · Coach · Bundles */}
             </p>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1.5">
               Choose Your Plan
             </h1>
             <p className="text-gray-600 text-sm md:text-base max-w-xl mx-auto">
-              Start with a {TRIAL_PERIOD_DAYS}-day LaunchVault Starter trial, or pick Growth, Pro Elite,
-              Coach-only, or a Bundle. Card on file at checkout · 1.5% Connect fee.
+              Start with a {TRIAL_PERIOD_DAYS}-day LaunchVault Starter trial, or pick Growth or Pro Elite.
+              {/* Coach-only, or a Bundle. */} Card on file at checkout · 1.5% Connect fee.
             </p>
             {plansLoading && (
               <p className="mt-2 text-[11px] font-semibold text-gray-400">Loading live prices…</p>
