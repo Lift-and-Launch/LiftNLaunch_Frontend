@@ -8,6 +8,7 @@ import { PRICING_RETURN_KEY } from "./utils/pricingNavigation";
 import {
   canAccessPremiumFeatures,
   hasActiveSubscription,
+  isComplimentaryActive,
   isUserTrialing,
   premiumAccessRedirect,
 } from "./utils/subscription";
@@ -130,8 +131,14 @@ const ApprovedRoute = ({ children }) => {
     }
     return <Navigate to="/pricing" replace />;
   }
-  // Trial users are auto-approved for campaign create / builder flows
-  if (isUserTrialing(user) || user.adminApprovalStatus === "approved") {
+  // Active plan (paid, trial, or complimentary) can use campaign create / builder.
+  if (
+    isUserTrialing(user) ||
+    isComplimentaryActive(user) ||
+    user.isSubscribed === true ||
+    user.subscription?.isSubscribed === true ||
+    user.adminApprovalStatus === "approved"
+  ) {
     return children;
   }
   return <Navigate to="/dashboard" replace />;

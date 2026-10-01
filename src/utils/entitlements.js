@@ -47,10 +47,17 @@ export function isTrialing(entitlements) {
   );
 }
 
-/** Trial / complimentary users are treated as approved for campaign create / builder access. */
+/** Active paid, trial, or complimentary plans can create and edit campaigns. */
 export function hasCampaignBuilderAccess(user, entitlements) {
   if (isTrialing(entitlements) || isUserTrialing(user)) return true;
   if (isComplimentaryActive(entitlements) || isComplimentaryActive(user)) return true;
+  if (
+    entitlements?.isSubscribed ||
+    user?.isSubscribed ||
+    user?.subscription?.isSubscribed
+  ) {
+    return true;
+  }
   return user?.adminApprovalStatus === "approved";
 }
 
