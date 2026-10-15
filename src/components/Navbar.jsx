@@ -1,45 +1,37 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronDown, Menu, Sparkles, X } from 'lucide-react';
+import { ChevronDown, Menu, Sparkles, X } from "lucide-react";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { isSuperAdmin } from "../utils/roles";
-import { canAccessPremiumFeatures, hasActiveSubscription } from "../utils/subscription";
+import { canAccessPremiumFeatures } from "../utils/subscription";
 
-function BusinessCoachNavLabel({ compact = false, showPro = false }) {
+const PRODUCT_LINKS = [
+  {
+    id: "launchvault",
+    to: "/services",
+    name: "LaunchVault",
+    blurb: "Campaigns, funnels & launch tools",
+  },
+  {
+    id: "venturecoach",
+    name: "VentureCoach",
+    blurb: "Guided coaching for founders",
+    isNew: true,
+  },
+  {
+    id: "ventureproof",
+    name: "VentureProof",
+    blurb: "Venture validator",
+    comingSoon: true,
+  },
+];
+
+function NewBadge() {
   return (
-    <span className="group/coach relative inline-flex flex-col items-center">
-      {/* “New” sits above the label so it reads as one control */}
-      <span
-        className={`absolute left-1/2 z-10 inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-yellow-300 via-yellow-400 to-amber-400 text-black font-black uppercase tracking-wider whitespace-nowrap animate-[coachBadgePulse_1.6s_ease-in-out_infinite] ${
-          compact
-            ? '-top-2.5 px-1.5 py-px text-[8px]'
-            : '-top-3 px-1.5 py-px text-[9px]'
-        }`}
-      >
-        <Sparkles
-          size={compact ? 8 : 9}
-          className="shrink-0 animate-[coachSpark_1.2s_ease-in-out_infinite]"
-          aria-hidden
-        />
-        New
-      </span>
-
-      <span
-        className={`relative font-bold tracking-tight transition-all duration-300 ease-out animate-[coachTextGlow_2.4s_ease-in-out_infinite] group-hover/coach:scale-105 group-hover/coach:tracking-wide ${
-          compact ? 'text-sm pt-1.5' : 'text-[15px] pt-1'
-        } text-amber-600 group-hover/coach:text-yellow-500`}
-      >
-        <span
-          aria-hidden
-          className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded-lg bg-yellow-300/0 blur-md transition-all duration-300 group-hover/coach:bg-yellow-300/45 group-hover/coach:blur-lg"
-        />
-        <span className="relative">Business Coach</span>
-        {showPro ? (
-          <span className="relative ml-1 text-[9px] font-black uppercase tracking-widest text-yellow-700/80 group-hover/coach:text-yellow-600">
-            Pro
-          </span>
-        ) : null}
-      </span>
+    <span className="inline-flex items-center gap-0.5 rounded-full bg-yellow-400 px-1.5 py-px text-[8px] font-black uppercase tracking-wider text-black">
+      <Sparkles size={8} aria-hidden />
+      New
     </span>
   );
 }
@@ -51,6 +43,7 @@ export default function Navbar() {
 
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   let dropdownTimeout;
 
   const handleMouseEnter = (key) => {
@@ -62,21 +55,54 @@ export default function Navbar() {
     dropdownTimeout = setTimeout(() => setActiveDropdown(null), 300);
   };
 
+  const closeMenus = () => {
+    setActiveDropdown(null);
+    setMobileMenuOpen(false);
+    setMobileProductsOpen(false);
+  };
+
   const getUserInitial = (name) => {
-    if (!name) return '';
-    return name?.charAt(0).toUpperCase() ?? '';
+    if (!name) return "";
+    return name?.charAt(0).toUpperCase() ?? "";
   };
 
   const handleSignOut = () => {
     logout();
-    navigate('/');
+    closeMenus();
+    navigate("/");
+  };
+
+  const dashboardHref =
+    isSuperAdmin(user?.role) && !user?.adminOtpVerified
+      ? "/admin/verify-otp"
+      : isSuperAdmin(user?.role)
+        ? "/admin/dashboard"
+        : "/dashboard";
+
+  const ventureCoachHref = canAccessPremiumFeatures(user)
+    ? "/dashboard/coach"
+    : "/pricing";
+
+  const onProductClick = (item, e) => {
+    if (item.comingSoon) {
+      e.preventDefault();
+      toast("VentureProof is coming soon.");
+      closeMenus();
+      return;
+    }
+    closeMenus();
+  };
+
+  const productHref = (item) => {
+    if (item.comingSoon) return "#";
+    if (item.id === "venturecoach") return ventureCoachHref;
+    return item.to;
   };
 
   return (
     <header className="bg-white border-b shadow-sm">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center">
+        <Link to="/" className="flex items-center" onClick={closeMenus}>
           <img
             src="/index/logo.webp"
             alt="Lift & Launch"
@@ -84,56 +110,76 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Desktop Menu */}
         <nav className="hidden md:flex space-x-6 items-center relative">
-          <Link to="/" className="hover:text-yellow-500">Home</Link>
-          <Link to="/campaigns" className="hover:text-yellow-500">Campaigns</Link>
-          <Link to="/services" className="hover:text-yellow-500">LaunchVault</Link>
+          <Link to="/" className="hover:text-yellow-500">
+            Home
+          </Link>
+          <Link to="/campaigns" className="hover:text-yellow-500">
+            Campaigns
+          </Link>
 
-          {/* About Us Dropdown */}
           <div
             className="relative flex items-center space-x-1"
-            onMouseEnter={() => handleMouseEnter('about')}
+            onMouseEnter={() => handleMouseEnter("products")}
             onMouseLeave={handleMouseLeave}
           >
             <button className="flex items-center hover:text-yellow-500" type="button">
-              About Us <ChevronDown className="w-4 h-4 ml-1" />
+              Products <ChevronDown className="w-4 h-4 ml-1" />
             </button>
             <div
-              className={`absolute top-full left-0 mt-2 py-2 w-40 z-50 bg-white shadow-md rounded transition-opacity duration-300 ${activeDropdown === 'about'
-                ? 'opacity-100 pointer-events-auto'
-                : 'opacity-0 pointer-events-none'
-                }`}
+              className={`absolute top-full left-0 mt-2 py-2 w-72 z-50 bg-white shadow-md rounded-xl border border-gray-100 transition-opacity duration-300 ${
+                activeDropdown === "products"
+                  ? "opacity-100 pointer-events-auto"
+                  : "opacity-0 pointer-events-none"
+              }`}
             >
-              <Link to="/agency" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Agency</Link>
-              <Link to="/faq" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">FAQ</Link>
-              <Link to="/blog" onClick={() => setActiveDropdown(null)} className="block px-4 py-2 hover:bg-gray-100">Blogs</Link>
+              {PRODUCT_LINKS.map((item) => (
+                <Link
+                  key={item.id}
+                  to={productHref(item)}
+                  onClick={(e) => onProductClick(item, e)}
+                  className={`block px-4 py-3 hover:bg-yellow-50 ${
+                    item.comingSoon ? "opacity-80" : ""
+                  }`}
+                >
+                  <span className="flex items-center gap-2 font-semibold text-gray-900">
+                    {item.name}
+                    {item.isNew ? <NewBadge /> : null}
+                    {item.comingSoon ? (
+                      <span className="rounded-full bg-gray-100 px-2 py-px text-[9px] font-black uppercase tracking-wider text-gray-500">
+                        Coming soon
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="block text-xs text-gray-500 mt-0.5">{item.blurb}</span>
+                </Link>
+              ))}
             </div>
           </div>
 
-          {showAuthUser && (
-            <Link
-              to={canAccessPremiumFeatures(user) ? "/dashboard/coach" : "/pricing"}
-              className="relative inline-flex items-center px-1 py-1 -my-1 rounded-lg transition-transform duration-300 hover:-translate-y-0.5"
-            >
-              <BusinessCoachNavLabel
-                showPro={!hasActiveSubscription(user) && !canAccessPremiumFeatures(user)}
-              />
-            </Link>
-          )}
-          <Link to="/contact" className="hover:text-yellow-500">Contact Us</Link>
+          <Link to="/agency" className="hover:text-yellow-500">
+            About Us
+          </Link>
+          <Link to="/contact" className="hover:text-yellow-500">
+            Contact Us
+          </Link>
 
-          {/* Auth / Avatar */}
           <div className="ml-4 relative">
             {!showAuthUser ? (
               <div className="space-x-3">
                 <Link to="/signup">
-                  <button className="bg-yellow-400 hover:bg-yellow-500 px-5 py-1 rounded-full text-sm border border-yellow-400 text-black" type="button">
+                  <button
+                    className="bg-yellow-400 hover:bg-yellow-500 px-5 py-1 rounded-full text-sm border border-yellow-400 text-black"
+                    type="button"
+                  >
                     Join
                   </button>
                 </Link>
                 <Link to="/signin">
-                  <button className="hover:bg-yellow-500 px-5 py-1 rounded-full text-sm border hover:border-yellow-400 text-black" type="button">
+                  <button
+                    className="hover:bg-yellow-500 px-5 py-1 rounded-full text-sm border hover:border-yellow-400 text-black"
+                    type="button"
+                  >
                     Sign in
                   </button>
                 </Link>
@@ -141,7 +187,7 @@ export default function Navbar() {
             ) : (
               <div
                 className="relative"
-                onMouseEnter={() => handleMouseEnter('profile')}
+                onMouseEnter={() => handleMouseEnter("profile")}
                 onMouseLeave={handleMouseLeave}
               >
                 <button
@@ -160,21 +206,16 @@ export default function Navbar() {
                 </button>
 
                 <div
-                  className={`absolute right-0 mt-2 w-40 bg-white border rounded shadow-md z-50 transition-opacity duration-300 ${activeDropdown === 'profile'
-                    ? 'opacity-100 pointer-events-auto'
-                    : 'opacity-0 pointer-events-none'
-                    }`}
+                  className={`absolute right-0 mt-2 w-40 bg-white border rounded shadow-md z-50 transition-opacity duration-300 ${
+                    activeDropdown === "profile"
+                      ? "opacity-100 pointer-events-auto"
+                      : "opacity-0 pointer-events-none"
+                  }`}
                   role="menu"
                 >
                   <Link
-                    to={
-                      isSuperAdmin(user?.role) && !user?.adminOtpVerified
-                        ? '/admin/verify-otp'
-                        : isSuperAdmin(user?.role)
-                          ? '/admin/dashboard'
-                          : '/dashboard'
-                    }
-                    onClick={() => setActiveDropdown(null)}
+                    to={dashboardHref}
+                    onClick={closeMenus}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                   >
@@ -182,17 +223,14 @@ export default function Navbar() {
                   </Link>
                   <Link
                     to="/dashboard/profile"
-                    onClick={() => setActiveDropdown(null)}
+                    onClick={closeMenus}
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
                   >
                     Profile
                   </Link>
                   <button
-                    onClick={() => {
-                      setActiveDropdown(null);
-                      handleSignOut();
-                    }}
+                    onClick={handleSignOut}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                     type="button"
                     role="menuitem"
@@ -205,7 +243,6 @@ export default function Navbar() {
           </div>
         </nav>
 
-        {/* Mobile Hamburger */}
         <button
           className="md:hidden"
           onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
@@ -216,37 +253,65 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden px-4 pb-4 space-y-3 bg-white shadow" role="menu">
-          <Link to="/" className="block" role="menuitem">Home</Link>
-          <Link to="/campaigns" className="block" role="menuitem">Campaigns</Link>
-          <Link to="/services" className="block" role="menuitem">LaunchVault</Link>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 pt-1">About Us</p>
-          <Link to="/agency" className="block pl-3" role="menuitem">Agency</Link>
-          <Link to="/faq" className="block pl-3" role="menuitem">FAQ</Link>
-          <Link to="/blog" className="block pl-3" role="menuitem">Blogs</Link>
-          <Link to="/contact" className="block" role="menuitem">Contact Us</Link>
-
-          {showAuthUser && (
-            <Link
-              to={canAccessPremiumFeatures(user) ? "/dashboard/coach" : "/pricing"}
-              className="block pt-2"
-              role="menuitem"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <BusinessCoachNavLabel compact />
-            </Link>
+          <Link to="/" className="block" role="menuitem" onClick={closeMenus}>
+            Home
+          </Link>
+          <Link to="/campaigns" className="block" role="menuitem" onClick={closeMenus}>
+            Campaigns
+          </Link>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between font-medium"
+            onClick={() => setMobileProductsOpen((open) => !open)}
+          >
+            Products
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${mobileProductsOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {mobileProductsOpen && (
+            <div className="pl-3 space-y-2">
+              {PRODUCT_LINKS.map((item) => (
+                <Link
+                  key={item.id}
+                  to={productHref(item)}
+                  className="block"
+                  role="menuitem"
+                  onClick={(e) => onProductClick(item, e)}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    {item.name}
+                    {item.isNew ? <NewBadge /> : null}
+                    {item.comingSoon ? (
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                        Coming soon
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              ))}
+            </div>
           )}
+          <Link to="/agency" className="block" role="menuitem" onClick={closeMenus}>
+            About Us
+          </Link>
+          <Link to="/contact" className="block" role="menuitem" onClick={closeMenus}>
+            Contact Us
+          </Link>
 
           {!showAuthUser ? (
             <div className="pt-2 space-y-2">
-              <Link to="/signup">
-                <button className="block w-full bg-yellow-400 hover:bg-yellow-500 px-5 py-2 rounded-full text-sm" type="button">
+              <Link to="/signup" onClick={closeMenus}>
+                <button
+                  className="block w-full bg-yellow-400 hover:bg-yellow-500 px-5 py-2 rounded-full text-sm"
+                  type="button"
+                >
                   Join
                 </button>
               </Link>
-              <Link to="/signin">
+              <Link to="/signin" onClick={closeMenus}>
                 <button className="block w-full border px-5 py-2 text-sm rounded-full" type="button">
                   Sign in
                 </button>
@@ -256,27 +321,32 @@ export default function Navbar() {
             <div className="pt-4 space-y-2 border-t mt-3">
               <div className="flex items-center space-x-3">
                 {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt="User Avatar"
-                    className="w-8 h-8 rounded-full"
-                  />
+                  <img src={user.avatar} alt="User Avatar" className="w-8 h-8 rounded-full" />
                 ) : (
                   <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-black font-semibold">
                     {getUserInitial(user.name)}
                   </div>
                 )}
-
                 <p className="text-sm font-medium">{user.name}</p>
               </div>
-              <Link to="/dashboard" className="block text-sm text-gray-700 hover:underline" role="menuitem">
+              <Link
+                to={dashboardHref}
+                className="block text-sm text-gray-700 hover:underline"
+                role="menuitem"
+                onClick={closeMenus}
+              >
                 Dashboard
               </Link>
-              <Link to="/dashboard/profile" className="block text-sm text-gray-700 hover:underline" role="menuitem">
+              <Link
+                to="/dashboard/profile"
+                className="block text-sm text-gray-700 hover:underline"
+                role="menuitem"
+                onClick={closeMenus}
+              >
                 Profile
               </Link>
               <button
-                onClick={() => handleSignOut()}
+                onClick={handleSignOut}
                 className="text-left text-sm text-red-600 hover:underline"
                 type="button"
                 role="menuitem"
@@ -287,32 +357,6 @@ export default function Navbar() {
           )}
         </div>
       )}
-      <style>{`
-        @keyframes coachBadgePulse {
-          0%, 100% {
-            transform: translateX(-50%) scale(1);
-            box-shadow: 0 0 8px rgba(250,204,21,0.7), 0 0 16px rgba(251,191,36,0.35);
-          }
-          50% {
-            transform: translateX(-50%) scale(1.08);
-            box-shadow: 0 0 14px rgba(250,204,21,1), 0 0 28px rgba(251,191,36,0.65);
-          }
-        }
-        @keyframes coachTextGlow {
-          0%, 100% {
-            text-shadow: 0 0 6px rgba(250,204,21,0.4), 0 0 14px rgba(251,191,36,0.25);
-            filter: brightness(1);
-          }
-          50% {
-            text-shadow: 0 0 12px rgba(250,204,21,0.85), 0 0 26px rgba(251,191,36,0.5);
-            filter: brightness(1.08);
-          }
-        }
-        @keyframes coachSpark {
-          0%, 100% { transform: rotate(0deg) scale(1); opacity: 1; }
-          50% { transform: rotate(18deg) scale(1.15); opacity: 0.85; }
-        }
-      `}</style>
     </header>
   );
 }
