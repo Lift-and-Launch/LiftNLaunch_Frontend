@@ -59,6 +59,33 @@ const CAMPAIGN_GOAL_OPTIONS = [
   'Show Support',
 ];
 
+function AmountToggle({ id, checked, onChange, label }) {
+  return (
+    <div className="inline-flex items-center gap-3 select-none">
+      <span className="text-xs font-black uppercase tracking-widest text-gray-700">{label}</span>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors ${
+          checked ? 'bg-yellow-500' : 'bg-gray-300'
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+            checked ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
+      </button>
+      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+        {checked ? 'On' : 'Off'}
+      </span>
+    </div>
+  );
+}
+
 const ERROR_FIELD_IDS = {
   name: 'basicsName',
   category: 'basicsCategory',
@@ -133,7 +160,8 @@ export default function CampaignConfiguration() {
     urgency: 'Moderate',
     problem: '',
     howItHelps: '',
-    includeFundraisingGoal: true,
+    includeFundraisingGoal: false,
+    includeInvestmentDetails: false,
     // Media
     videoUrl: '',
     story: '',
@@ -221,9 +249,13 @@ export default function CampaignConfiguration() {
               includeFundraisingGoal:
                 typeof config.includeFundraisingGoal === 'boolean'
                   ? config.includeFundraisingGoal
-                  : config.basics?.campaignGoals
-                    ? config.basics.campaignGoals === 'Raise Funds'
-                    : true,
+                  : Number(config.basics?.goal) > 0,
+              includeInvestmentDetails:
+                typeof config.includeInvestmentDetails === 'boolean'
+                  ? config.includeInvestmentDetails
+                  : Number(config.minInvestment) > 0 ||
+                    Number(config.equity) > 0 ||
+                    Number(config.basics?.goal) > 0,
             }));
             const loadedCategory = config.basics?.category || '';
             if (loadedCategory) {
@@ -365,15 +397,19 @@ export default function CampaignConfiguration() {
       newErrors.campaignGoals = "Campaign goals is required";
     }
 
-    const requireFundraisingGoal =
-      activeType !== 'donation' || formData.includeFundraisingGoal !== false;
+    const includeFundraisingGoal = formData.includeFundraisingGoal === true;
+    const includeInvestmentDetails = formData.includeInvestmentDetails === true;
+    const requireGoalAmount =
+      activeType === 'reward' ||
+      (activeType === 'donation' && includeFundraisingGoal) ||
+      (activeType === 'investment' && includeInvestmentDetails);
 
     const goalNum = Number(formData.basics.goal);
-    if (requireFundraisingGoal) {
+    if (requireGoalAmount) {
       if (formData.basics.goal === '' || formData.basics.goal === null || formData.basics.goal === undefined) {
         newErrors.goal = "Goal amount is required";
-      } else if (isNaN(goalNum) || goalNum <= 0) {
-        newErrors.goal = "Goal amount must be a number greater than 0";
+      } else if (isNaN(goalNum) || goalNum < 1) {
+        newErrors.goal = "Goal amount must be 1 or greater";
       }
     }
 
@@ -414,7 +450,7 @@ export default function CampaignConfiguration() {
         newErrors.rewards = rewardErrors;
       }
     } else if (activeType === 'donation') {
-      if (requireFundraisingGoal && !formData.basics.duration) {
+      if (includeFundraisingGoal && !formData.basics.duration) {
         newErrors.duration = "Duration is required";
       }
       if (!formData.problem?.trim()) {
@@ -433,17 +469,19 @@ export default function CampaignConfiguration() {
       if (!formData.country?.trim()) {
         newErrors.country = "Country of incorporation is required";
       }
-      const minInv = Number(formData.minInvestment);
-      if (formData.minInvestment === '' || formData.minInvestment === null || formData.minInvestment === undefined) {
-        newErrors.minInvestment = "Minimum investment is required";
-      } else if (isNaN(minInv) || minInv <= 0) {
-        newErrors.minInvestment = "Minimum investment must be greater than 0";
-      }
-      const eq = Number(formData.equity);
-      if (formData.equity === '' || formData.equity === null || formData.equity === undefined) {
-        newErrors.equity = "Equity percentage is required";
-      } else if (isNaN(eq) || eq <= 0 || eq > 100) {
-        newErrors.equity = "Equity must be a percentage between 0 and 100";
+      if (includeInvestmentDetails) {
+        const minInv = Number(formData.minInvestment);
+        if (formData.minInvestment === '' || formData.minInvestment === null || formData.minInvestment === undefined) {
+          newErrors.minInvestment = "Minimum investment is required";
+        } else if (isNaN(minInv) || minInv < 1) {
+          newErrors.minInvestment = "Minimum investment must be 1 or greater";
+        }
+        const eq = Number(formData.equity);
+        if (formData.equity === '' || formData.equity === null || formData.equity === undefined) {
+          newErrors.equity = "Equity percentage is required";
+        } else if (isNaN(eq) || eq <= 0 || eq > 100) {
+          newErrors.equity = "Equity must be a percentage between 0 and 100";
+        }
       }
     }
 
@@ -481,7 +519,11 @@ export default function CampaignConfiguration() {
 
       // Prepare payload based on type
       const includeFundraising =
-        activeType !== 'donation' || formData.includeFundraisingGoal !== false;
+        activeType === 'donation' && formData.includeFundraisingGoal === true;
+      const includeInvestment =
+        activeType === 'investment' && formData.includeInvestmentDetails === true;
+      const includeGoalAmount =
+        activeType === 'reward' || includeFundraising || includeInvestment;
       const payload = {
         campaignType: activeType,
         paymentOptionActive: paymentOptionActive,
@@ -492,10 +534,10 @@ export default function CampaignConfiguration() {
             tagline: formData.basics.tagline.trim(),
             category: formData.basics.category.trim(),
             campaignGoals: formData.basics.campaignGoals || '',
-            goal: includeFundraising ? Number(formData.basics.goal) : 0,
+            goal: includeGoalAmount ? Number(formData.basics.goal) : 0,
             duration: activeType === 'investment' 
               ? 365 
-              : includeFundraising
+              : includeFundraising || activeType === 'reward'
                 ? (formData.basics.duration === 'forever' ? 36500 : Number(formData.basics.duration || 30))
                 : 36500,
             startDate: activeType === 'reward' 
@@ -510,8 +552,9 @@ export default function CampaignConfiguration() {
             legalName: formData.legalName.trim(),
             regNumber: formData.regNumber.trim(),
             country: formData.country.trim(),
-            minInvestment: Number(formData.minInvestment),
-            equity: Number(formData.equity),
+            minInvestment: includeInvestment ? Number(formData.minInvestment) : 0,
+            equity: includeInvestment ? Number(formData.equity) : 0,
+            includeInvestmentDetails: includeInvestment,
             revenue: formData.revenue,
             burnRate: formData.burnRate,
             team: formData.team
@@ -774,8 +817,6 @@ export default function CampaignConfiguration() {
                     setFormData((prev) => ({
                       ...prev,
                       basics: { ...prev.basics, campaignGoals: val },
-                      includeFundraisingGoal:
-                        val === 'Raise Funds' ? true : prev.includeFundraisingGoal,
                     }));
                     setErrors((prev) => {
                       if (!prev.campaignGoals) return prev;
@@ -1093,7 +1134,30 @@ export default function CampaignConfiguration() {
               </section>
 
               <section className="bg-gray-50/50 rounded-[3rem] p-12 border border-gray-100">
-                {renderSectionHeader("Investment Details")}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                  {renderSectionHeader("Investment Details")}
+                  <AmountToggle
+                    id="includeInvestmentDetails"
+                    checked={formData.includeInvestmentDetails === true}
+                    label="Set raise amounts"
+                    onChange={(checked) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        includeInvestmentDetails: checked,
+                      }));
+                      if (!checked) {
+                        setErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.goal;
+                          delete next.minInvestment;
+                          delete next.equity;
+                          return next;
+                        });
+                      }
+                    }}
+                  />
+                </div>
+                {formData.includeInvestmentDetails === true ? (
                 <div className="grid md:grid-cols-3 gap-6">
                    <div>
                      <label htmlFor="basicsGoal" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Target Raise Amount</label>
@@ -1161,6 +1225,11 @@ export default function CampaignConfiguration() {
                      {errors.equity && <p className="text-red-500 text-xs mt-1 font-bold">{errors.equity}</p>}
                    </div>
                 </div>
+                ) : (
+                  <p className="text-sm font-semibold text-gray-500">
+                    Amount fields are optional. Turn this on if you want a target raise, minimum investment, and equity %.
+                  </p>
+                )}
               </section>
             </>
           )}
@@ -1170,34 +1239,28 @@ export default function CampaignConfiguration() {
               <section className="bg-gray-50/50 rounded-[3rem] p-12 border border-gray-100">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                   {renderSectionHeader("Fundraising Goal")}
-                  <label className="inline-flex items-center gap-3 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={formData.includeFundraisingGoal !== false}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setFormData((prev) => ({
-                          ...prev,
-                          includeFundraisingGoal: checked,
-                        }));
-                        if (!checked) {
-                          setErrors((prev) => {
-                            const next = { ...prev };
-                            delete next.goal;
-                            delete next.duration;
-                            return next;
-                          });
-                        }
-                      }}
-                      className="w-4 h-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500 cursor-pointer"
-                    />
-                    <span className="text-xs font-black uppercase tracking-widest text-gray-700">
-                      Include fundraising goal
-                    </span>
-                  </label>
+                  <AmountToggle
+                    id="includeFundraisingGoal"
+                    checked={formData.includeFundraisingGoal === true}
+                    label="Set donation goal"
+                    onChange={(checked) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        includeFundraisingGoal: checked,
+                      }));
+                      if (!checked) {
+                        setErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.goal;
+                          delete next.duration;
+                          return next;
+                        });
+                      }
+                    }}
+                  />
                 </div>
 
-                {formData.includeFundraisingGoal !== false ? (
+                {formData.includeFundraisingGoal === true ? (
                 <div className="grid md:grid-cols-3 gap-6">
                    <div>
                      <label htmlFor="basicsGoal" className="block text-sm font-black text-gray-900 mb-2 uppercase tracking-wide">Donation Goal</label>
@@ -1247,7 +1310,7 @@ export default function CampaignConfiguration() {
                 </div>
                 ) : (
                   <p className="text-sm font-semibold text-gray-500">
-                    Fundraising goal fields are hidden. Turn the checkbox on if you want to set a donation goal, duration, and urgency.
+                    No donation amount is required. Turn this on if you want a goal, duration, and urgency.
                   </p>
                 )}
               </section>

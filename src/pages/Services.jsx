@@ -195,7 +195,7 @@ export default function Services() {
       <section className="relative w-full bg-white mb-[120px]">
         <div className="relative w-full h-96 md:h-[420px]">
           <OptimizedImage
-            src="/images/team-group.webp"
+            src="/images/team-group.jpg"
             alt="Lift & Launch crowdfunding support"
             className="object-cover object-center w-full h-full"
             loading="lazy"
