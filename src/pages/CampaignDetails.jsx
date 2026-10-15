@@ -31,20 +31,27 @@ const CampaignDetails = () => {
     const fetchCampaignDetails = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/campaigns/public/${id}`);
+        let response;
+        try {
+          response = await api.get(`/campaigns/public/${id}`);
+        } catch (publicErr) {
+          if (publicErr.response?.status !== 500) throw publicErr;
+          response = await api.get(`/campaigns/${id}`);
+        }
         if (response.data.success) {
           const c = response.data.data;
+          const config = c.campaignConfig || c.configuration || {};
           setCampaign({
             id: c._id,
             title: c.campaignName,
-            description: c.description || c.businessInfo?.description,
+            description: c.description || c.businessInfo?.description || config.story,
             amountRaised: 0,
-            fundingTarget: c.configuration?.fundingTarget || 0,
+            fundingTarget: config.fundingTarget || config.basics?.goal || 0,
             investorCount: 0,
-            equityOffered: c.configuration?.equityOffered || 0,
-            preMoneyValuation: c.configuration?.preMoneyValuation || 0,
-            sharePrice: c.configuration?.sharePrice || 0,
-            logoUrl: c.businessInfo?.logoUrl || "/campaign/logo.png",
+            equityOffered: config.equityOffered || config.equity || 0,
+            preMoneyValuation: config.preMoneyValuation || 0,
+            sharePrice: config.sharePrice || 0,
+            logoUrl: c.businessInfo?.logoUrl || c.businessInfo?.logo || "/campaign/logo.png",
             galleryImages: c.businessInfo?.galleryUrls?.length ? c.businessInfo.galleryUrls : galleryImages,
             valueHighlights: c.configuration?.highlights || [],
             sections: [] // Maps to custom sections if added later
