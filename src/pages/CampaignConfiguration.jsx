@@ -218,7 +218,11 @@ export default function CampaignConfiguration() {
                 name: config.basics?.name || '',
                 category: config.basics?.category || '',
                 tagline: config.basics?.tagline || '',
-                goal: config.basics?.goal || '',
+                goal:
+                  !config.basics?.goal ||
+                  String(config.basics.goal).toUpperCase() === 'NA'
+                    ? ''
+                    : config.basics.goal,
                 duration: config.basics?.duration === 36500 || config.basics?.duration === '36500' 
                   ? 'forever' 
                   : config.basics?.duration || '',
@@ -534,7 +538,7 @@ export default function CampaignConfiguration() {
             tagline: formData.basics.tagline.trim(),
             category: formData.basics.category.trim(),
             campaignGoals: formData.basics.campaignGoals || '',
-            goal: includeGoalAmount ? Number(formData.basics.goal) : 0,
+            goal: includeGoalAmount ? Number(formData.basics.goal) : "NA",
             duration: activeType === 'investment' 
               ? 365 
               : includeFundraising || activeType === 'reward'
