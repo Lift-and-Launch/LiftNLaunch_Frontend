@@ -151,7 +151,12 @@ export default function ReviewSubmitCampaign() {
             <div className="grid md:grid-cols-2 gap-6 bg-gray-50/50 rounded-2xl p-8 border border-gray-100">
               <div>
                 <p className="text-sm font-black text-gray-900 mb-1">Funding Goal</p>
-                <p className="text-sm text-gray-500 font-medium">{campaignConfig.basics?.goal ? `$${campaignConfig.basics.goal}` : 'How much do you want to raise?'}</p>
+                <p className="text-sm text-gray-500 font-medium">
+                  {campaignConfig.basics?.goal &&
+                  String(campaignConfig.basics.goal).toUpperCase() !== 'NA'
+                    ? `$${campaignConfig.basics.goal}`
+                    : 'Not raising a set amount'}
+                </p>
               </div>
               <div>
                 <p className="text-sm font-black text-gray-900 mb-1">Campaign Duration</p>
