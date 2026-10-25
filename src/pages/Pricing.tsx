@@ -6,7 +6,7 @@ import Seo from "../seo/Seo";
 import { pageSeo } from "../seo/seoConfig";
 import { useAuth } from "../context/AuthContext";
 import {
-  SAAS_PRICING_TIERS,
+  ALL_PRICING_TIERS,
   TRIAL_PERIOD_DAYS,
   getPlanCheckoutCta,
   shouldRequestStarterTrial,
@@ -42,12 +42,20 @@ const checkIcon = (
   </svg>
 );
 
-type PricingTier = typeof SAAS_PRICING_TIERS;
+type PricingTier = typeof ALL_PRICING_TIERS;
+type PricingCategory = "launchvault" | "coach" | "bundle";
+
+const CATEGORY_TABS: { id: PricingCategory; label: string }[] = [
+  { id: "launchvault", label: "LaunchVault Platform" },
+  { id: "coach", label: "AI Business Coach" },
+  { id: "bundle", label: "Growth & Elite Bundles ✨" },
+];
 
 export default function Pricing() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [tiers, setTiers] = useState<PricingTier>(SAAS_PRICING_TIERS);
+  const [tiers, setTiers] = useState<PricingTier>(ALL_PRICING_TIERS);
+  const [activeCategory, setActiveCategory] = useState<PricingCategory>("launchvault");
   const [plansLoading, setPlansLoading] = useState(true);
   const [entitlements, setEntitlements] = useState<Record<string, unknown> | null>(
     null
@@ -158,7 +166,9 @@ export default function Pricing() {
     complimentaryActive
   );
 
-  const familyGroups = getTiersByFamily(tiers);
+  const familyGroups = getTiersByFamily(tiers).filter(
+    (group) => group.id === activeCategory
+  );
 
   const complimentaryNote = (() => {
     if (complimentaryActive && complimentary) {
@@ -207,16 +217,36 @@ export default function Pricing() {
 
           <div className="text-center mb-6 md:mb-8">
             <p className="text-xs font-semibold text-yellow-600 uppercase tracking-wide mb-1">
-              LaunchVault
-              {/* · Coach · Bundles */}
+              LaunchVault · Coach · Bundles
             </p>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1.5">
               Choose Your Plan
             </h1>
             <p className="text-gray-600 text-sm md:text-base max-w-xl mx-auto">
-              Start with a {TRIAL_PERIOD_DAYS}-day LaunchVault Starter trial, or pick Growth or Pro Elite.
-              {/* Coach-only, or a Bundle. */} Card on file at checkout · 1.5% Connect fee.
+              Start with a {TRIAL_PERIOD_DAYS}-day LaunchVault Starter trial, pick Coach-only, or save
+              with a Bundle. Card on file at checkout · 1.5% Connect fee.
             </p>
+            <div className="mt-5 inline-flex flex-wrap justify-center p-1 rounded-xl bg-gray-100 border border-gray-200 gap-1">
+              {CATEGORY_TABS.map((tab) => {
+                const active = activeCategory === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveCategory(tab.id)}
+                    className={`px-4 py-2 text-xs md:text-sm font-bold rounded-lg transition-all ${
+                      active
+                        ? tab.id === "bundle"
+                          ? "bg-yellow-400 text-gray-900 shadow-sm"
+                          : "bg-white text-gray-900 shadow-sm border border-gray-200"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
             {plansLoading && (
               <p className="mt-2 text-[11px] font-semibold text-gray-400">Loading live prices…</p>
             )}

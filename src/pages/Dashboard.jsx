@@ -333,22 +333,6 @@ const UserDashboardView = ({ logout, user }) => {
                       >
                          Create New Campaign <ArrowRight size={18} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate(
-                            canAccessPremiumFeatures(user)
-                              ? '/dashboard/coach'
-                              : '/pricing'
-                          )
-                        }
-                        className="px-10 py-5 bg-white border border-gray-200 text-gray-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:border-yellow-400 transition-all flex items-center gap-2 cursor-pointer"
-                      >
-                         <Sparkles size={18} className="text-yellow-500" /> Business Coach
-                         {!hasActiveSubscription(user) ? (
-                           <span className="text-[10px] font-black uppercase tracking-widest text-yellow-600">Pro</span>
-                         ) : null}
-                      </button>
                       {!user.isSubscribed && (
                         <button 
                           onClick={() => goToPricing(navigate, location)}

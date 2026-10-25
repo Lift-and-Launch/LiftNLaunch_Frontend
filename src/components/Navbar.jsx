@@ -15,15 +15,9 @@ const PRODUCT_LINKS = [
   },
   {
     id: "venturecoach",
-    name: "VentureCoach",
-    blurb: "Guided coaching for founders",
+    name: "VentureCoach & VentureProof",
+    blurb: "AI Business Coach & Validation",
     isNew: true,
-  },
-  {
-    id: "ventureproof",
-    name: "VentureProof",
-    blurb: "Venture validator",
-    comingSoon: true,
   },
 ];
 
