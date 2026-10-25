@@ -5,18 +5,17 @@ export const SAAS_PLAN_IDS = [
   "starter",
   "growth",
   "pro_elite",
-  // Coach & Validation and mixed bundles — hidden until later
-  // "coach_starter",
-  // "coach_growth",
-  // "coach_pro_elite",
-  // "bundle_growth",
-  // "bundle_elite",
+  "coach_starter",
+  "coach_growth",
+  "coach_pro_elite",
+  "bundle_growth",
+  "bundle_elite",
 ];
 
 export const PLAN_LABELS = {
-  starter: "LaunchVault Starter",
-  growth: "LaunchVault Growth",
-  pro_elite: "LaunchVault Pro Elite",
+  starter: "LV Starter",
+  growth: "LV Growth",
+  pro_elite: "LV Pro Elite",
   coach_starter: "Coach Starter",
   coach_growth: "Coach Growth",
   coach_pro_elite: "Coach Pro Elite",
@@ -40,7 +39,7 @@ export const SAAS_PRICING_TIERS = [
     id: "starter",
     family: "launchvault",
     familyLabel: "LaunchVault",
-    name: "Starter",
+    name: "LV Starter",
     price: "$39",
     priceAmount: 39,
     period: "month",
@@ -61,7 +60,7 @@ export const SAAS_PRICING_TIERS = [
     id: "growth",
     family: "launchvault",
     familyLabel: "LaunchVault",
-    name: "Growth",
+    name: "LV Growth",
     price: "$149",
     priceAmount: 149,
     period: "month",
@@ -81,7 +80,7 @@ export const SAAS_PRICING_TIERS = [
     id: "pro_elite",
     family: "launchvault",
     familyLabel: "LaunchVault",
-    name: "Pro Elite",
+    name: "LV Pro Elite",
     price: "$299",
     priceAmount: 299,
     period: "month",
@@ -96,97 +95,114 @@ export const SAAS_PRICING_TIERS = [
       "Business Coach included",
     ],
   },
-  // Coach & Validation and mixed bundles — hidden until later
-  // {
-  //   id: "coach_starter",
-  //   family: "coach",
-  //   familyLabel: "Coach & Validation",
-  //   name: "Starter",
-  //   price: "$49",
-  //   priceAmount: 49,
-  //   period: "month",
-  //   isPopular: false,
-  //   isFeatured: false,
-  //   trialEligible: false,
-  //   paidCta: "Buy Coach Starter",
-  //   features: [
-  //     "Business Coach only",
-  //     "No campaigns or visit allowances",
-  //     "Case-based coaching & service plans",
-  //   ],
-  // },
-  // {
-  //   id: "coach_growth",
-  //   family: "coach",
-  //   familyLabel: "Coach & Validation",
-  //   name: "Growth",
-  //   price: "$129",
-  //   priceAmount: 129,
-  //   period: "month",
-  //   isPopular: true,
-  //   isFeatured: true,
-  //   trialEligible: false,
-  //   paidCta: "Buy Coach Growth",
-  //   features: [
-  //     "Business Coach only",
-  //     "No campaigns or visit allowances",
-  //     "Expanded coaching capacity",
-  //   ],
-  // },
-  // {
-  //   id: "coach_pro_elite",
-  //   family: "coach",
-  //   familyLabel: "Coach & Validation",
-  //   name: "Pro Elite",
-  //   price: "$249",
-  //   priceAmount: 249,
-  //   period: "month",
-  //   isPopular: false,
-  //   isFeatured: false,
-  //   trialEligible: false,
-  //   paidCta: "Buy Coach Pro Elite",
-  //   features: [
-  //     "Business Coach only",
-  //     "No campaigns or visit allowances",
-  //     "Highest Coach tier",
-  //   ],
-  // },
-  // {
-  //   id: "bundle_growth",
-  //   family: "bundle",
-  //   familyLabel: "Bundles",
-  //   name: "Growth Bundle",
-  //   price: "$222",
-  //   priceAmount: 222,
-  //   period: "month",
-  //   isPopular: true,
-  //   isFeatured: true,
-  //   trialEligible: false,
-  //   paidCta: "Buy Growth Bundle",
-  //   features: [
-  //     "LaunchVault Growth limits",
-  //     "Business Coach included",
-  //     "5 campaigns · 10,000 visits / month",
-  //   ],
-  // },
-  // {
-  //   id: "bundle_elite",
-  //   family: "bundle",
-  //   familyLabel: "Bundles",
-  //   name: "Elite Bundle",
-  //   price: "$439",
-  //   priceAmount: 439,
-  //   period: "month",
-  //   isPopular: false,
-  //   isFeatured: false,
-  //   trialEligible: false,
-  //   paidCta: "Buy Elite Bundle",
-  //   features: [
-  //     "LaunchVault Pro Elite limits",
-  //     "Business Coach included",
-  //     "Unlimited campaigns · 50,000 visits / month",
-  //   ],
-  // },
+];
+
+export const COACH_PRICING_TIERS = [
+  {
+    id: "coach_starter",
+    family: "coach",
+    familyLabel: "AI Business Coach",
+    name: "Coach Starter",
+    price: "$49",
+    priceAmount: 49,
+    period: "month",
+    isPopular: false,
+    isFeatured: false,
+    trialEligible: false,
+    paidCta: "Subscribe to Coach Starter",
+    features: [
+      "AI Business Coach & Strategy Guidance",
+      "Diagnosis & business validation tools",
+      "Targeted feedback & step-by-step roadmap",
+      "Email support",
+    ],
+  },
+  {
+    id: "coach_growth",
+    family: "coach",
+    familyLabel: "AI Business Coach",
+    name: "Coach Growth",
+    price: "$129",
+    priceAmount: 129,
+    period: "month",
+    isPopular: true,
+    isFeatured: true,
+    trialEligible: false,
+    paidCta: "Subscribe to Coach Growth",
+    features: [
+      "Everything in Coach Starter",
+      "Advanced multi-channel validation",
+      "Detailed market analysis & competitor tracking",
+      "Priority coaching support",
+    ],
+  },
+  {
+    id: "coach_pro_elite",
+    family: "coach",
+    familyLabel: "AI Business Coach",
+    name: "Coach Pro Elite",
+    price: "$349",
+    priceAmount: 349,
+    period: "month",
+    isPopular: false,
+    isFeatured: false,
+    trialEligible: false,
+    paidCta: "Subscribe to Coach Pro Elite",
+    features: [
+      "Everything in Coach Growth",
+      "Deep executive validation & strategic reviews",
+      "Human coach escalation path",
+      "VIP priority support & dedicated sessions",
+    ],
+  },
+];
+
+export const BUNDLE_PRICING_TIERS = [
+  {
+    id: "bundle_growth",
+    family: "bundle",
+    familyLabel: "Bundles",
+    name: "Growth Bundle",
+    price: "$499",
+    priceAmount: 499,
+    period: "month",
+    isPopular: false,
+    isFeatured: false,
+    trialEligible: false,
+    paidCta: "Get Growth Bundle",
+    features: [
+      "LaunchVault Growth ($149 value)",
+      "Coach Growth ($129 value)",
+      "Complete launch & validation suite",
+      "Priority multi-channel support",
+    ],
+  },
+  {
+    id: "bundle_elite",
+    family: "bundle",
+    familyLabel: "Bundles",
+    name: "Elite Bundle",
+    price: "$799",
+    priceAmount: 799,
+    period: "month",
+    isPopular: true,
+    isFeatured: true,
+    trialEligible: false,
+    paidCta: "Get Elite Bundle",
+    features: [
+      "LaunchVault Pro Elite ($299 value)",
+      "Coach Pro Elite ($349 value)",
+      "Unlimited campaigns & highest tier validation",
+      "VIP onboarding & dedicated strategy reviews",
+    ],
+  },
+];
+
+/** Every checkoutable tier across LaunchVault, Coach and Bundles. */
+export const ALL_PRICING_TIERS = [
+  ...SAAS_PRICING_TIERS,
+  ...COACH_PRICING_TIERS,
+  ...BUNDLE_PRICING_TIERS,
 ];
 
 export const PRICING_FAMILIES = [
@@ -195,17 +211,16 @@ export const PRICING_FAMILIES = [
     label: "LaunchVault",
     description: "Campaigns, landing pages, visits & Business Coach",
   },
-  // Coach & Validation and mixed bundles — hidden until later
-  // {
-  //   id: "coach",
-  //   label: "Coach & Validation",
-  //   description: "Business Coach only — no campaigns or visits",
-  // },
-  // {
-  //   id: "bundle",
-  //   label: "Bundles",
-  //   description: "LaunchVault limits plus Business Coach",
-  // },
+  {
+    id: "coach",
+    label: "AI Business Coach",
+    description: "AI coaching, validation & roadmaps — no campaigns or visits",
+  },
+  {
+    id: "bundle",
+    label: "Bundles",
+    description: "LaunchVault + Coach together at one price",
+  },
 ];
 
 function formatMoneyPrice(amount, currency = "usd") {
@@ -286,7 +301,7 @@ export async function fetchSubscriptionPlans() {
       ? res.data.addOns
       : [];
 
-  const tiers = SAAS_PRICING_TIERS.map((fallback) => {
+  const tiers = ALL_PRICING_TIERS.map((fallback) => {
     const api = byId[fallback.id];
     if (!api) return { ...fallback };
     return {
@@ -327,7 +342,7 @@ export async function fetchSubscriptionPlans() {
   return { tiers, addOns, fromApi: apiPlans.length > 0 };
 }
 
-export function getTiersByFamily(tiers = SAAS_PRICING_TIERS) {
+export function getTiersByFamily(tiers = ALL_PRICING_TIERS) {
   return PRICING_FAMILIES.map((family) => ({
     ...family,
     tiers: tiers.filter((t) => t.family === family.id),
