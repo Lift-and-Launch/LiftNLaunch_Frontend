@@ -15,7 +15,7 @@ const PRODUCT_LINKS = [
   {
     id: "venturecoach",
     to: "/venture-navigator",
-    name: "Venture Navigator & Validator",
+    name: "Venture Navigator",
     blurb: "AI Business Coach & Validation",
     isNew: true,
   },
