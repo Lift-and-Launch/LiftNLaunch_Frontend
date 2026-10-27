@@ -47,7 +47,7 @@ type PricingCategory = "launchvault" | "coach" | "bundle";
 
 const CATEGORY_TABS: { id: PricingCategory; label: string }[] = [
   { id: "launchvault", label: "LaunchVault Platform" },
-  { id: "coach", label: "AI Business Coach" },
+  { id: "coach", label: "Venture Navigator" },
   { id: "bundle", label: "Growth & Elite Bundles ✨" },
 ];
 

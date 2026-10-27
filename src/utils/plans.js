@@ -213,13 +213,13 @@ export const PRICING_FAMILIES = [
   },
   {
     id: "coach",
-    label: "AI Business Coach",
-    description: "AI coaching, validation & roadmaps — no campaigns or visits",
+    label: "Venture Navigator",
+    description: "Validate Your Vision. Navigate Your Business. Launch With Confidence.",
   },
   {
     id: "bundle",
     label: "Bundles",
-    description: "LaunchVault + Coach together at one price",
+    description: "LaunchVault & Venture Navigator at one price",
   },
 ];
 
