@@ -207,7 +207,7 @@ export default function VentureNavigator() {
                 <span className="w-11 h-11 rounded-xl bg-yellow-400/20 flex items-center justify-center">
                   <Compass className="text-yellow-600" size={22} aria-hidden />
                 </span>
-                <h3 className="text-2xl md:text-3xl font-bold text-gray-900">Venture Navigator</h3>
+                <h3 className="text-2xl md:text-3xl font-bold text-gray-900">Venture Coach</h3>
               </div>
               <p className="mt-2 text-yellow-700 font-semibold">
                 Your AI Business Coach &amp; Business Case Manager
