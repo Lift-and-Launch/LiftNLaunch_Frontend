@@ -70,6 +70,12 @@ export const pageSeo = {
       "SaaS pricing for LaunchVault: Starter $39 (15-day free trial), Growth $149, and Pro Elite $299 per month — plus a 1.5% Connect platform fee.",
     path: "/pricing",
   },
+  ventureNavigator: {
+    title: "Venture Navigator & Venture Validator — AI Business Coach | Lift & Launch",
+    description:
+      "Your AI-powered business coach, validator, and guide. Build your business model, research your market, validate your idea, and get clear next steps.",
+    path: "/venture-navigator",
+  },
   privacy: {
     title: "Privacy Policy | Lift & Launch",
     description:
