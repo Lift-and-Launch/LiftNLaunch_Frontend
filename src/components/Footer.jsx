@@ -98,8 +98,16 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="text-center text-sm text-gray-500 bg-gray-800 py-4">
-        © {year ?? ""} Lift &amp; Launch. All rights reserved.
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-center text-sm text-gray-500 bg-gray-800 py-4 px-4">
+        <span>© {year ?? ""} Lift &amp; Launch. All rights reserved.</span>
+        <nav className="flex gap-4" aria-label="Legal">
+          <Link to="/terms" className="hover:text-yellow-400 transition">
+            Terms of Service
+          </Link>
+          <Link to="/privacy" className="hover:text-yellow-400 transition">
+            Privacy Policy
+          </Link>
+        </nav>
       </div>
     </footer>
   );

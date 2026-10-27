@@ -1059,7 +1059,10 @@ export default function ConsultationIntakeForm({
               onChange={(e) => setField("confirmTerms", e.target.checked)}
             />
             <span className="text-sm text-gray-800">
-              I agree to the Lift & Launch Terms & Privacy Policy.
+              I agree to the Lift & Launch{" "}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms of Service</a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>.
             </span>
           </label>
         </div>

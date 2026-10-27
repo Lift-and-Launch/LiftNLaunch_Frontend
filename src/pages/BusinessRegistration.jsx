@@ -687,7 +687,7 @@ export default function BusinessRegistration() {
                         checked={agreedToTerms}
                         onChange={(e) => setAgreedToTerms(e.target.checked)}
                       />
-                      <span className="text-sm font-bold text-gray-600">I Agree To The <span className="text-yellow-600 underline">Terms & Privacy Policy</span></span>
+                      <span className="text-sm font-bold text-gray-600">I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-yellow-600 underline">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-yellow-600 underline">Privacy Policy</a></span>
                    </label>
                    {errors.agreedToTerms && <p className="text-red-500 text-xs mt-1 font-bold pl-8">{errors.agreedToTerms}</p>}
                  </div>

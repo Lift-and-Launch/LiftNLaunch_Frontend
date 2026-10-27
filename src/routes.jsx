@@ -22,6 +22,8 @@ const Blog = React.lazy(() => import("./pages/Blog"));
 const BlogDetails = React.lazy(() => import("./pages/BlogDetails"));
 const Contact = React.lazy(() => import("./pages/Contact"));
 const FAQ = React.lazy(() => import("./pages/FAQ"));
+const PrivacyPolicy = React.lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = React.lazy(() => import("./pages/TermsOfService"));
 const SignIn = React.lazy(() => import("./pages/SignIn"));
 const SignUp = React.lazy(() => import("./pages/SignUp"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
@@ -234,6 +236,22 @@ const AppRoutes = () => {
           element={
             <MainLayout>
               <FAQ />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <MainLayout>
+              <PrivacyPolicy />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <MainLayout>
+              <TermsOfService />
             </MainLayout>
           }
         />
