@@ -13,6 +13,7 @@ export default function SignUp() {
     password: '',
     confirmPassword: '',
   });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +35,10 @@ export default function SignUp() {
 
     if (form.password !== form.confirmPassword) {
       return setError("Passwords do not match");
+    }
+
+    if (!agreedToTerms) {
+      return setError("Please agree to the Terms of Service and Privacy Policy");
     }
 
     setLoading(true);
@@ -136,9 +141,22 @@ export default function SignUp() {
               />
             </div>
 
-            <p className="text-xs text-gray-500 py-2">
-                By creating an account, you agree to our <a href="#" className="underline">Terms of Service</a> and <a href="#" className="underline">Privacy Policy</a>.
-            </p>
+            <label className="flex items-start gap-3 py-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="agreedToTerms"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                required
+                className="mt-0.5 w-4 h-4 rounded accent-yellow-500"
+              />
+              <span className="text-xs text-gray-500">
+                I agree to the{' '}
+                <Link to="/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms of Service</Link>{' '}
+                and{' '}
+                <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</Link>.
+              </span>
+            </label>
 
             <button 
               type="submit" 

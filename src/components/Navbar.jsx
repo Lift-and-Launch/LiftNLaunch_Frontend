@@ -4,7 +4,6 @@ import { ChevronDown, Menu, Sparkles, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { isSuperAdmin } from "../utils/roles";
-import { canAccessPremiumFeatures } from "../utils/subscription";
 
 const PRODUCT_LINKS = [
   {
@@ -15,7 +14,8 @@ const PRODUCT_LINKS = [
   },
   {
     id: "venturecoach",
-    name: "VentureCoach & VentureProof",
+    to: "/venture-navigator",
+    name: "Venture Navigator & Validator",
     blurb: "AI Business Coach & Validation",
     isNew: true,
   },
@@ -73,10 +73,6 @@ export default function Navbar() {
         ? "/admin/dashboard"
         : "/dashboard";
 
-  const ventureCoachHref = canAccessPremiumFeatures(user)
-    ? "/dashboard/coach"
-    : "/pricing";
-
   const onProductClick = (item, e) => {
     if (item.comingSoon) {
       e.preventDefault();
@@ -89,7 +85,6 @@ export default function Navbar() {
 
   const productHref = (item) => {
     if (item.comingSoon) return "#";
-    if (item.id === "venturecoach") return ventureCoachHref;
     return item.to;
   };
 
