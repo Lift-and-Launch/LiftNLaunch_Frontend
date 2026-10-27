@@ -26,6 +26,7 @@ import {
   resumeSubscription,
 } from "../utils/entitlements";
 import TrialBanner from "../components/TrialBanner";
+import { SUPPORT_EMAIL } from "../utils/contact";
 import {
   formatPlanLabel,
   isUnlimitedCampaigns,
@@ -866,7 +867,7 @@ export default function Profile() {
                 Our support team is available to assist with custom templates, ad account syncing, or stripe configurations.
               </p>
               <a 
-                href="mailto:support@liftandlaunch.com" 
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="inline-block pt-2 text-yellow-400 text-xs font-black uppercase tracking-wider hover:underline"
               >
                 Contact Support →

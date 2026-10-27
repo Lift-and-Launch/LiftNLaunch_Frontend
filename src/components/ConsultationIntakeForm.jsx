@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Check, Loader2, Upload, X } from "lucide-react";
 import api from "../api/axios";
+import { AGENCY_EMAIL } from "../utils/contact";
 import {
   EMAIL_REGEX,
   sanitizeBusinessText,
@@ -569,7 +570,7 @@ export default function ConsultationIntakeForm({
       setStatus("error");
       setMessage(
         err?.response?.data?.message ||
-          "We couldn't submit your form right now. Please try again or email hello@liftnlaunch.com."
+          `We couldn't submit your form right now. Please try again or email ${AGENCY_EMAIL}.`
       );
     }
   };

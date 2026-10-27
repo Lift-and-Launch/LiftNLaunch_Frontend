@@ -2,6 +2,7 @@ import React from "react";
 import InquiryFormMultiStep from "../components/InquiryFormMultiStep";
 import Seo from "../seo/Seo";
 import { pageSeo } from "../seo/seoConfig";
+import { AGENCY_EMAIL } from "../utils/contact";
 
 const Contact = () => {
   const seo = pageSeo.contact;
@@ -44,10 +45,10 @@ const Contact = () => {
                       Email Us
                     </p>
                     <a
-                      href="mailto:hello@liftnlaunch.com"
+                      href={`mailto:${AGENCY_EMAIL}`}
                       className="text-gray-900 font-bold text-lg hover:text-yellow-600"
                     >
-                      hello@liftnlaunch.com
+                      {AGENCY_EMAIL}
                     </a>
                   </div>
                 </div>

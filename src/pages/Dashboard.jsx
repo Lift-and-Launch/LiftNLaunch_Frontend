@@ -30,6 +30,7 @@ import TrialBanner from '../components/TrialBanner';
 import api from '../api/axios';
 import AdminDashboardView from '../components/AdminDashboardView';
 import { canAccessPremiumFeatures, hasActiveSubscription } from '../utils/subscription';
+import { SUPPORT_EMAIL } from '../utils/contact';
 import {
   fetchEntitlements,
   isTrialing,
@@ -295,7 +296,7 @@ const UserDashboardView = ({ logout, user }) => {
               <div className="space-y-1 text-center md:text-left">
                 <h3 className="text-lg font-black text-rose-900 uppercase tracking-tight">Verification Request Rejected</h3>
                 <p className="text-sm text-rose-700/80 font-bold leading-relaxed">
-                  Your verification request has been rejected. Please review our guidelines or contact support at support@neighborhood.com to resolve this.
+                  Your verification request has been rejected. Please review our guidelines or contact support at {SUPPORT_EMAIL} to resolve this.
                 </p>
               </div>
             </div>

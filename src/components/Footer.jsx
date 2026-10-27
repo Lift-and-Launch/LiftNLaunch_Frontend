@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { SUPPORT_EMAIL } from "../utils/contact";
 import {
   Facebook as FacebookIcon,
   Twitter as TwitterIcon,
@@ -65,10 +66,10 @@ export default function Footer() {
               </a>
             </div>
             <a
-              href="mailto:hello@liftnlaunch.com"
+              href={`mailto:${SUPPORT_EMAIL}`}
               className="text-sm text-gray-400 hover:text-yellow-400"
             >
-              hello@liftnlaunch.com
+              {SUPPORT_EMAIL}
             </a>
           </div>
 

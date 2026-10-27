@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Interest, NextStep, Readiness } from "../types";
 import api from "../api/axios";
+import { AGENCY_EMAIL } from "../utils/contact";
 
 const interestLabels = {
     [Interest.CROWDFUNDING_SUPPORT]: "Crowdfunding Campaign Support",
@@ -143,7 +144,7 @@ export default function InquiryFormMultiStep() {
             setStatus("error");
             setMsg(
                 err?.response?.data?.message ||
-                    "We couldn't submit your inquiry. Please try again or email hello@liftnlaunch.com."
+                    `We couldn't submit your inquiry. Please try again or email ${AGENCY_EMAIL}.`
             );
         }
     };
